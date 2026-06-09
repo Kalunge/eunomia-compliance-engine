@@ -19,7 +19,7 @@ Render.
 
 - Live deployment: <https://eunomia-m5yy.onrender.com>
 - Health probe: <https://eunomia-m5yy.onrender.com/actuator/health>
-- Task board: *(coming once Trello is wired up — see `docs/SETUP.md`)*
+- Task board: <https://trello.com/b/43NaWowH/eunomia-compliance-engine>
 
 ## Architecture summary
 
