@@ -50,6 +50,19 @@ eunomia:
       secret: ${JWT_SECRET}
       expiry-seconds: ${JWT_EXPIRY_SECONDS:86400}
       issuer: ${JWT_ISSUER:eunomia}
+  storage:
+    local:
+      # Sprint 1 stores uploaded blobs on the local filesystem. Container
+      # restarts on Render wipe this; that's acceptable for the capstone
+      # — re-upload during demos. Production would swap in an S3-backed
+      # StorageService bean.
+      root: ${STORAGE_ROOT:./data}
+
+# Allow PDF uploads up to ~25MB (CBK circulars are usually under 10MB).
+servlet:
+  multipart:
+    max-file-size: 25MB
+    max-request-size: 25MB
 
 springdoc:
   swagger-ui:

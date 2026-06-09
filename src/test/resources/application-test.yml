@@ -5,3 +5,7 @@ eunomia:
       secret: dGVzdC1zZWNyZXQtc28tbG9uZy10aGF0LWl0LWlzLW1vcmUtdGhhbi0yNTYtYml0cy1sb25nLXh4eHg=
       expiry-seconds: 3600
       issuer: eunomia-test
+  storage:
+    local:
+      # Tests write tiny blobs into a JVM-tmp folder; the OS cleans up.
+      root: ${java.io.tmpdir}/eunomia-test-storage
