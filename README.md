@@ -48,21 +48,34 @@ the `design-and-testing.md` document (added at the end of Sprint 3).
 
 - JDK 21 (Corretto, Temurin, or any standard distribution)
 - Docker + Docker Compose
-- Node 20 (for the frontend, added Sprint 1)
+- Node 20 (for the frontend)
 
-**Start the stack locally**
+**Start the stack locally** — three terminals:
 
 ```bash
-# 1. Bring up Postgres + pgvector (host port 5434 to avoid clashing with
-#    native Postgres or other projects on 5432/5433).
+# Terminal 1 — Postgres + pgvector on host port 5434 (5432/5433 may
+# already be in use by a native Postgres or other projects).
 docker compose up -d postgres
 
-# 2. Run the app.
+# Terminal 2 — Spring Boot backend on :8080
 ./gradlew bootRun
+
+# Terminal 3 — Vue dev server on :5173, proxies /api to :8080
+cd web && npm install && npm run dev
 ```
 
-The app listens on `http://localhost:8080`. Swagger UI is at `/docs`,
-health at `/actuator/health`.
+URLs:
+- Frontend: `http://localhost:5173`
+- API: `http://localhost:8080`
+- Swagger UI: `http://localhost:8080/docs`
+- Health: `http://localhost:8080/actuator/health`
+
+**Pre-commit hooks** (one-time):
+
+```bash
+pip install pre-commit
+pre-commit install
+```
 
 **Run the tests**
 
