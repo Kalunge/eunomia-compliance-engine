@@ -1,13 +1,24 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
-import HomePage from '@/pages/HomePage'
+import { Navigate, Route, Routes } from 'react-router-dom'
+import LoginPage from '@/pages/LoginPage'
+import RegulationsPage from '@/pages/RegulationsPage'
+import ProtectedRoute from '@/components/ProtectedRoute'
 
-// Sprint 0 ships only the placeholder landing. The full route map (login,
-// dashboard, regulations, policies, settings) lands in Sprint 1.
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route
+        path="/regulations"
+        element={
+          <ProtectedRoute>
+            <RegulationsPage />
+          </ProtectedRoute>
+        }
+      />
+      {/* Default route redirects to /regulations; ProtectedRoute kicks
+          unauthenticated users out to /login. */}
+      <Route path="/" element={<Navigate to="/regulations" replace />} />
+      <Route path="*" element={<Navigate to="/regulations" replace />} />
     </Routes>
   )
 }
