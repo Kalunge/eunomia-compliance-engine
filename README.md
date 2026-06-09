@@ -17,8 +17,9 @@ under development. This repo follows a three-sprint agile cadence with a
 live Trello board, recorded sprint demos, and CI/CD-gated deploys to
 Render.
 
-- Live deployment: *(coming end of Sprint 0)*
-- Task board: *(coming end of Sprint 0)*
+- Live deployment: <https://eunomia-m5yy.onrender.com>
+- Health probe: <https://eunomia-m5yy.onrender.com/actuator/health>
+- Task board: *(coming once Trello is wired up — see `docs/SETUP.md`)*
 
 ## Architecture summary
 
