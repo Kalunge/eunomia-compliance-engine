@@ -42,6 +42,15 @@ management:
     readinessstate:
       enabled: true
 
+eunomia:
+  security:
+    jwt:
+      # 64+ char random string. Generate with: openssl rand -base64 64
+      # No default — the app refuses to boot without it.
+      secret: ${JWT_SECRET}
+      expiry-seconds: ${JWT_EXPIRY_SECONDS:86400}
+      issuer: ${JWT_ISSUER:eunomia}
+
 springdoc:
   swagger-ui:
     path: /docs
