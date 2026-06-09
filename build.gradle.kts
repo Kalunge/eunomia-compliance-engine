@@ -72,6 +72,13 @@ dependencies {
 	// ── API docs ─────────────────────────────────────────────────────
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0")
 
+	// ── Local-dev convenience ────────────────────────────────────────
+	// Lets Spring Boot read a .env file at the project root so dev
+	// secrets (JWT_SECRET, etc.) stay out of source control. In
+	// production (Render injects env vars directly) the absence of
+	// .env is a silent no-op.
+	implementation("me.paulschwarz:spring-dotenv:4.0.0")
+
 	// ── Test ─────────────────────────────────────────────────────────
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.springframework.boot:spring-boot-testcontainers")
