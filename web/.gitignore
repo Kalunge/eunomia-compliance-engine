@@ -4,3 +4,9 @@ dist-ssr
 *.local
 .vite
 .DS_Store
+
+# TS build outputs
+*.tsbuildinfo
+# Compiled vite.config (we ship the .ts source only)
+vite.config.js
+vite.config.d.ts

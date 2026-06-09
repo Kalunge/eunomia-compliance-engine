@@ -1,7 +1,8 @@
 # Eunomia Web
 
-Vue 3 + Vite + TypeScript + Tailwind frontend for the Eunomia compliance
-engine.
+React 18 + Vite + TypeScript + Tailwind frontend for the Eunomia
+compliance engine. State management via Zustand (auth/tenant context)
+and TanStack Query (server data caching).
 
 ## Local development
 
@@ -14,8 +15,13 @@ npm run dev
 Dev server runs on `http://localhost:5173` and proxies `/api/**` (and
 `/ws/**`) to the Spring Boot backend on `:8080`, so no CORS dance.
 
-Make sure the backend is running first: `./gradlew bootRun` from the
-project root after `docker compose up -d postgres`.
+Start the backend first:
+
+```bash
+# from project root
+docker compose up -d postgres
+./gradlew bootRun
+```
 
 ## Build
 
@@ -23,5 +29,24 @@ project root after `docker compose up -d postgres`.
 npm run build
 ```
 
-Produces `dist/`. The Spring Boot Docker image will pick this up and
-serve it as static content (added in Sprint 1).
+Produces `dist/`. The Spring Boot Docker image picks this up and serves
+it as static content (wired in Sprint 1).
+
+## Lint + format
+
+```bash
+npm run lint
+npm run format
+```
+
+## Project structure
+
+```
+src/
+  ├── pages/    # route-level components
+  ├── lib/      # API client, helpers
+  ├── stores/   # Zustand stores (auth, tenant context)
+  ├── styles/   # Tailwind base styles
+  ├── App.tsx   # router
+  └── main.tsx  # entry point
+```
