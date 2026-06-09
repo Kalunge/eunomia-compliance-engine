@@ -1,0 +1,25 @@
+services:
+  postgres:
+    image: 'pgvector/pgvector:pg17'
+    container_name: eunomia-postgres
+    environment:
+      POSTGRES_DB: eunomia
+      POSTGRES_USER: eunomia
+      POSTGRES_PASSWORD: eunomia
+    # Host port 5433 to avoid clashing with any native Postgres install on 5432.
+    ports:
+      - '5434:5432'
+    volumes:
+      - eunomia-pg-data:/var/lib/postgresql/data
+    healthcheck:
+      # pg_isready can report healthy during Postgres' init-phase (when the
+      # eunomia role doesn't exist yet). A real SELECT confirms the role and
+      # database are usable before Spring Boot connects.
+      test: ['CMD-SHELL', 'psql -U eunomia -d eunomia -c "SELECT 1" >/dev/null 2>&1 || exit 1']
+      interval: 3s
+      timeout: 5s
+      retries: 30
+      start_period: 5s
+
+volumes:
+  eunomia-pg-data:
