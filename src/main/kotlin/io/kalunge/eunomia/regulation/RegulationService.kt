@@ -6,10 +6,13 @@ import io.kalunge.eunomia.domain.Regulation
 import io.kalunge.eunomia.domain.RegulationRepository
 import io.kalunge.eunomia.domain.RegulationStatus
 import io.kalunge.eunomia.storage.StorageService
+import io.kalunge.eunomia.workflow.ExtractionWorkflow
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.support.TransactionSynchronization
+import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.web.multipart.MultipartFile
 import java.util.UUID
 
@@ -27,6 +30,7 @@ class RegulationService(
     private val regulationRepository: RegulationRepository,
     private val obligationRepository: ObligationRepository,
     private val storage: StorageService,
+    private val extractionWorkflow: ExtractionWorkflow,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -56,6 +60,18 @@ class RegulationService(
         )
         val saved = regulationRepository.save(regulation)
         log.info("Stored regulation id={} tenantId={} bytes={}", saved.id, tenantId, stored.sizeBytes)
+
+        // Kick off extraction AFTER the upload's transaction commits.
+        // Doing this inline would mean the async worker could find an
+        // empty/uncommitted regulation row (since @Async runs in a
+        // separate transaction). afterCommit() guarantees the row is
+        // visible before the workflow starts.
+        TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
+            override fun afterCommit() {
+                extractionWorkflow.processInBackground(saved.id, tenantId)
+            }
+        })
+
         return saved
     }
 

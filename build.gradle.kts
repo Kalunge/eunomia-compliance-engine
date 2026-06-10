@@ -92,6 +92,7 @@ dependencies {
 	testImplementation("org.assertj:assertj-core")
 	testImplementation("io.rest-assured:rest-assured:5.5.0")
 	testImplementation("org.wiremock:wiremock-standalone:3.9.2")
+	testImplementation("org.awaitility:awaitility-kotlin:4.2.2")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
