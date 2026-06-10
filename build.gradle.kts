@@ -59,8 +59,14 @@ dependencies {
 	runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
 
 	// ── AI integration ───────────────────────────────────────────────
+	// Note: deliberately NOT using langchain4j-spring-boot-starter.
+	// It auto-configures a ContentRetriever that demands a single
+	// EmbeddingModel bean, which clashes with our two Cohere beans
+	// (one tuned for "search_document", one for "search_query"). We
+	// hand-roll all agent + RAG wiring through @Configuration classes
+	// in io.kalunge.eunomia.config, so the starter's autoconfig isn't
+	// needed.
 	implementation("dev.langchain4j:langchain4j:${property("langchain4jVersion")}")
-	implementation("dev.langchain4j:langchain4j-spring-boot-starter:${property("langchain4jVersion")}")
 	implementation("dev.langchain4j:langchain4j-open-ai:${property("langchain4jVersion")}") // Groq is OpenAI-compatible
 	implementation("dev.langchain4j:langchain4j-cohere:${property("langchain4jVersion")}")
 	implementation("dev.langchain4j:langchain4j-pgvector:${property("langchain4jVersion")}")
