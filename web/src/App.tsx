@@ -5,6 +5,9 @@ import RegisterPage from '@/pages/RegisterPage'
 import RegulationsPage from '@/pages/RegulationsPage'
 import UploadRegulationPage from '@/pages/UploadRegulationPage'
 import RegulationDetailPage from '@/pages/RegulationDetailPage'
+import PoliciesPage from '@/pages/PoliciesPage'
+import UploadPolicyPage from '@/pages/UploadPolicyPage'
+import PolicyDetailPage from '@/pages/PolicyDetailPage'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import AppLayout from '@/components/AppLayout'
 
@@ -43,6 +46,37 @@ export default function App() {
           <ProtectedRoute>
             <AppLayout>
               <RegulationDetailPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/policies"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <PoliciesPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/policies/upload"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <UploadPolicyPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/policies/:id"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <PolicyDetailPage />
             </AppLayout>
           </ProtectedRoute>
         }

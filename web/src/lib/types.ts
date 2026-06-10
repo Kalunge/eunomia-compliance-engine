@@ -74,3 +74,38 @@ export interface PageResponse<T> {
   totalElements: number
   totalPages: number
 }
+
+export type PolicyStatus = 'PARSING' | 'INDEXED' | 'FAILED'
+
+export interface PolicySummary {
+  id: string
+  title: string
+  sourceFilename: string
+  mimeType: string
+  sizeBytes: number
+  status: PolicyStatus
+  chunkCount: number
+  uploadedAt: string
+  processedAt: string | null
+}
+
+export interface PolicyChunkView {
+  id: string
+  chunkIndex: number
+  text: string
+  pageStart: number | null
+  pageEnd: number | null
+}
+
+export interface PolicyDetail {
+  id: string
+  title: string
+  sourceFilename: string
+  mimeType: string
+  sizeBytes: number
+  status: PolicyStatus
+  uploadedAt: string
+  processedAt: string | null
+  lastError: string | null
+  chunks: PolicyChunkView[]
+}

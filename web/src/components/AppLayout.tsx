@@ -26,7 +26,7 @@ interface NavItem {
 const PRIMARY_NAV: NavItem[] = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, disabled: true },
   { to: '/regulations', label: 'Regulations', icon: FileText },
-  { to: '/policies', label: 'Internal policies', icon: BookOpen, disabled: true },
+  { to: '/policies', label: 'Internal policies', icon: BookOpen },
   { to: '/settings', label: 'Settings', icon: Settings, disabled: true },
 ]
 

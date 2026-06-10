@@ -1,8 +1,10 @@
 import { clsx } from 'clsx'
-import { CheckCircle2, Clock, FileText, Sparkles, AlertCircle } from 'lucide-react'
-import type { RegulationStatus } from '@/lib/types'
+import { CheckCircle2, Clock, FileText, Sparkles, AlertCircle, BookOpen } from 'lucide-react'
+import type { PolicyStatus, RegulationStatus } from '@/lib/types'
 
-const STYLES: Record<RegulationStatus, { label: string; classes: string; Icon: typeof Clock }> = {
+type AnyStatus = RegulationStatus | PolicyStatus
+
+const STYLES: Record<AnyStatus, { label: string; classes: string; Icon: typeof Clock }> = {
   PARSING: {
     label: 'Parsing',
     classes: 'bg-slate-100 text-slate-700 ring-slate-200',
@@ -23,6 +25,11 @@ const STYLES: Record<RegulationStatus, { label: string; classes: string; Icon: t
     classes: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
     Icon: CheckCircle2,
   },
+  INDEXED: {
+    label: 'Indexed',
+    classes: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+    Icon: BookOpen,
+  },
   FAILED: {
     label: 'Failed',
     classes: 'bg-rose-50 text-rose-700 ring-rose-200',
@@ -31,7 +38,7 @@ const STYLES: Record<RegulationStatus, { label: string; classes: string; Icon: t
 }
 
 interface Props {
-  status: RegulationStatus
+  status: AnyStatus
   size?: 'sm' | 'md'
 }
 
