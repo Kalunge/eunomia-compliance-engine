@@ -68,6 +68,12 @@ eunomia:
       secret: ${JWT_SECRET}
       expiry-seconds: ${JWT_EXPIRY_SECONDS:86400}
       issuer: ${JWT_ISSUER:eunomia}
+  mapper:
+    # ANN top-K — how many candidate policy chunks per obligation the
+    # judge sees. Higher = more thorough, more LLM tokens.
+    top-k: ${MAPPER_TOP_K:5}
+    # LLM judge confidence below this → not a match. Above → persisted.
+    confidence-threshold: ${MAPPER_CONFIDENCE_THRESHOLD:0.6}
   storage:
     local:
       # Sprint 1 stores uploaded blobs on the local filesystem. Container

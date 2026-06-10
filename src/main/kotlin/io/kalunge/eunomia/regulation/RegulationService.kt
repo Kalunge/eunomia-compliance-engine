@@ -1,7 +1,10 @@
 package io.kalunge.eunomia.regulation
 
 import io.kalunge.eunomia.domain.GapStatus
+import io.kalunge.eunomia.domain.ObligationPolicyMatchRepository
 import io.kalunge.eunomia.domain.ObligationRepository
+import io.kalunge.eunomia.domain.PolicyChunkRepository
+import io.kalunge.eunomia.domain.PolicyRepository
 import io.kalunge.eunomia.domain.Regulation
 import io.kalunge.eunomia.domain.RegulationRepository
 import io.kalunge.eunomia.domain.RegulationStatus
@@ -29,6 +32,9 @@ import java.util.UUID
 class RegulationService(
     private val regulationRepository: RegulationRepository,
     private val obligationRepository: ObligationRepository,
+    private val matchRepository: ObligationPolicyMatchRepository,
+    private val policyChunkRepository: PolicyChunkRepository,
+    private val policyRepository: PolicyRepository,
     private val storage: StorageService,
     private val extractionWorkflow: ExtractionWorkflow,
 ) {
@@ -99,7 +105,32 @@ class RegulationService(
         val regulation = regulationRepository.findByIdAndTenantId(id, tenantId)
             ?: throw RegulationNotFoundException(id)
         val obligations = obligationRepository.findAllByRegulationIdAndTenantIdOrderByOrderIndexAsc(id, tenantId)
-        return RegulationDetail.from(regulation, obligations)
+
+        // Three batch queries to avoid N+1 — one for matches, one for the
+        // referenced chunks, one for the policies those chunks belong to.
+        val matches = matchRepository.findAllByObligationIdInAndTenantId(
+            obligations.map { it.id },
+            tenantId,
+        )
+        val chunkIdsCited = matches.map { it.policyChunkId }.toSet()
+        val chunks = if (chunkIdsCited.isEmpty()) emptyList()
+        else policyChunkRepository.findAllByIdInAndTenantId(chunkIdsCited, tenantId)
+        val chunkById = chunks.associateBy { it.id }
+
+        val policyIds = chunks.map { it.policyId }.toSet()
+        val policyTitleById = if (policyIds.isEmpty()) emptyMap()
+        else policyRepository.findAllById(policyIds).associateBy({ it.id }, { it.title })
+
+        val matchesByObligation = matches
+            .mapNotNull { m ->
+                val chunk = chunkById[m.policyChunkId] ?: return@mapNotNull null
+                val title = policyTitleById[chunk.policyId] ?: "Unknown policy"
+                m.obligationId to MatchedChunkView.from(m, chunk, title)
+            }
+            .groupBy({ it.first }, { it.second })
+            .mapValues { (_, views) -> views.sortedByDescending { it.confidence } }
+
+        return RegulationDetail.from(regulation, obligations, matchesByObligation)
     }
 
     companion object {

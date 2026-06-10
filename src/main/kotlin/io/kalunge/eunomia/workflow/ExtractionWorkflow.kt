@@ -38,6 +38,7 @@ class ExtractionWorkflow(
     private val storage: StorageService,
     private val documentParser: DocumentParser,
     private val extractorAgent: ExtractorAgent,
+    private val mappingWorkflow: MappingWorkflow,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -78,6 +79,11 @@ class ExtractionWorkflow(
             extracted.size,
             elapsedMs,
         )
+
+        // Hand off to the Mapper. processInBackground is @Async on
+        // MappingWorkflow (different bean), so this returns immediately
+        // and the mapping runs on a fresh executor task.
+        mappingWorkflow.processInBackground(regulationId, tenantId)
     }
 
     private fun parseBlob(regulation: Regulation): String {

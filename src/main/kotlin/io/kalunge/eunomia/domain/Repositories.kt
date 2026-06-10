@@ -63,4 +63,18 @@ interface PolicyChunkRepository : JpaRepository<PolicyChunk, UUID> {
     ): List<PolicyChunk>
 
     fun countByPolicyIdAndTenantId(policyId: UUID, tenantId: UUID): Long
+
+    fun findAllByIdInAndTenantId(ids: Collection<UUID>, tenantId: UUID): List<PolicyChunk>
+}
+
+@Repository
+interface ObligationPolicyMatchRepository : JpaRepository<ObligationPolicyMatch, UUID> {
+    fun findAllByObligationIdAndTenantId(obligationId: UUID, tenantId: UUID): List<ObligationPolicyMatch>
+
+    fun findAllByObligationIdInAndTenantId(
+        obligationIds: Collection<UUID>,
+        tenantId: UUID,
+    ): List<ObligationPolicyMatch>
+
+    fun deleteAllByObligationIdAndTenantId(obligationId: UUID, tenantId: UUID)
 }

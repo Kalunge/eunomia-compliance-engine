@@ -3,6 +3,8 @@ package io.kalunge.eunomia.regulation
 import com.fasterxml.jackson.annotation.JsonInclude
 import io.kalunge.eunomia.domain.GapStatus
 import io.kalunge.eunomia.domain.Obligation
+import io.kalunge.eunomia.domain.ObligationPolicyMatch
+import io.kalunge.eunomia.domain.PolicyChunk
 import io.kalunge.eunomia.domain.Regulation
 import io.kalunge.eunomia.domain.RegulationStatus
 import java.time.Instant
@@ -51,7 +53,11 @@ data class RegulationDetail(
     val obligations: List<ObligationView>,
 ) {
     companion object {
-        fun from(r: Regulation, obligations: List<Obligation>) = RegulationDetail(
+        fun from(
+            r: Regulation,
+            obligations: List<Obligation>,
+            matchesByObligation: Map<UUID, List<MatchedChunkView>> = emptyMap(),
+        ) = RegulationDetail(
             id = r.id,
             title = r.title,
             sourceFilename = r.sourceFilename,
@@ -61,7 +67,9 @@ data class RegulationDetail(
             uploadedAt = r.uploadedAt,
             processedAt = r.processedAt,
             lastError = r.lastError,
-            obligations = obligations.map { ObligationView.from(it) },
+            obligations = obligations.map {
+                ObligationView.from(it, matchesByObligation[it.id].orEmpty())
+            },
         )
     }
 }
@@ -74,9 +82,10 @@ data class ObligationView(
     val pageEnd: Int?,
     val orderIndex: Int,
     val gapStatus: GapStatus,
+    val matchedChunks: List<MatchedChunkView>,
 ) {
     companion object {
-        fun from(o: Obligation) = ObligationView(
+        fun from(o: Obligation, matchedChunks: List<MatchedChunkView> = emptyList()) = ObligationView(
             id = o.id,
             summary = o.summary,
             sourceExcerpt = o.sourceExcerpt,
@@ -84,6 +93,34 @@ data class ObligationView(
             pageEnd = o.pageEnd,
             orderIndex = o.orderIndex,
             gapStatus = o.gapStatus,
+            matchedChunks = matchedChunks,
+        )
+    }
+}
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
+data class MatchedChunkView(
+    val chunkId: UUID,
+    val policyId: UUID,
+    val policyTitle: String,
+    val chunkIndex: Int,
+    val text: String,
+    val confidence: Double,
+    val reasoning: String?,
+) {
+    companion object {
+        fun from(
+            match: ObligationPolicyMatch,
+            chunk: PolicyChunk,
+            policyTitle: String,
+        ) = MatchedChunkView(
+            chunkId = chunk.id,
+            policyId = chunk.policyId,
+            policyTitle = policyTitle,
+            chunkIndex = chunk.chunkIndex,
+            text = chunk.text,
+            confidence = match.confidence,
+            reasoning = match.reasoning,
         )
     }
 }
