@@ -1,6 +1,8 @@
 package io.kalunge.eunomia
 
 import dev.langchain4j.model.chat.ChatLanguageModel
+import io.kalunge.eunomia.embedding.EmbeddingService
+import io.kalunge.eunomia.embedding.StubEmbeddingService
 import io.kalunge.eunomia.extraction.StubChatLanguageModel
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection
@@ -38,4 +40,14 @@ class TestcontainersConfiguration {
     fun chatLanguageModel(): ChatLanguageModel = StubChatLanguageModel(
         """{ "obligations": [] }""",
     )
+
+    /**
+     * Replaces the production CohereEmbeddingService for any test that
+     * loads the Spring context. The production [io.kalunge.eunomia.config.CohereConfig]
+     * is annotated @Profile("!test") so it's silent here, and the
+     * StubEmbeddingService produces deterministic 1024-d L2-normalised
+     * vectors — no Cohere quota burn from CI.
+     */
+    @Bean
+    fun embeddingService(): EmbeddingService = StubEmbeddingService()
 }

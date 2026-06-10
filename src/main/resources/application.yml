@@ -55,6 +55,12 @@ eunomia:
       model: ${GROQ_MODEL:llama-3.3-70b-versatile}
       temperature: ${GROQ_TEMPERATURE:0.1}
       timeout-seconds: ${GROQ_TIMEOUT:60}
+    cohere:
+      # Cohere embed-english-v3.0 produces 1024-d L2-normalised vectors.
+      # Free tier is generous enough for the capstone.
+      api-key: ${COHERE_API_KEY:}
+      model: ${COHERE_MODEL:embed-english-v3.0}
+      timeout-seconds: ${COHERE_TIMEOUT:60}
   security:
     jwt:
       # 64+ char random string. Generate with: openssl rand -base64 64
