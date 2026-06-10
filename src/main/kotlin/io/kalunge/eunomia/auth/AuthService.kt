@@ -5,6 +5,7 @@ import io.kalunge.eunomia.domain.TenantRepository
 import io.kalunge.eunomia.domain.User
 import io.kalunge.eunomia.domain.UserRepository
 import io.kalunge.eunomia.domain.UserRole
+import org.slf4j.LoggerFactory
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -25,6 +26,8 @@ class AuthService(
     private val jwtService: JwtService,
 ) {
 
+    private val log = LoggerFactory.getLogger(javaClass)
+
     @Transactional(readOnly = true)
     fun login(request: LoginRequest): AuthResponse {
         val tenant = findTenant(request.tenantSlug)
@@ -35,6 +38,7 @@ class AuthService(
             throw BadCredentialsException()
         }
 
+        log.info("User {} signed in (tenant {})", user.email, tenant.slug)
         return issueResponse(user)
     }
 
@@ -56,6 +60,7 @@ class AuthService(
         )
         userRepository.save(user)
 
+        log.info("User {} registered (tenant {}, role MEMBER)", user.email, tenant.slug)
         return issueResponse(user)
     }
 

@@ -1,6 +1,9 @@
 spring:
   application:
     name: eunomia
+  output:
+    ansi:
+      enabled: always
   datasource:
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5434/eunomia}
     username: ${DATABASE_USERNAME:eunomia}
@@ -83,4 +86,4 @@ logging:
     io.kalunge.eunomia: DEBUG
     org.hibernate.SQL: WARN
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n"
+    console: "%clr(%d{HH:mm:ss.SSS}){faint} %clr(%-5level) %clr([%12.12thread]){faint} %clr(%-32.32logger{32}){cyan} %msg%n"

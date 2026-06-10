@@ -59,17 +59,24 @@ class ExtractionWorkflow(
         val regulation = regulationRepository.findByIdAndTenantId(regulationId, tenantId)
             ?: error("Regulation $regulationId vanished between upload and extraction.")
 
-        log.info("Starting extraction for regulation {} (tenant {})", regulationId, tenantId)
+        val started = System.currentTimeMillis()
+        log.info("Extracting regulation {} ({})", regulationId, regulation.sourceFilename)
 
         val parsedText = parseBlob(regulation)
+        log.debug("Parsed {} characters from {}", parsedText.length, regulation.sourceFilename)
+
         val extracted = extractorAgent.extract(parsedText)
+        log.debug("LLM returned {} obligations", extracted.size)
+
         persistObligations(regulation, extracted)
         markExtracted(regulation)
 
+        val elapsedMs = System.currentTimeMillis() - started
         log.info(
-            "Extraction complete for regulation {} — {} obligations",
+            "Extraction complete for regulation {} — {} obligations in {} ms",
             regulationId,
             extracted.size,
+            elapsedMs,
         )
     }
 
