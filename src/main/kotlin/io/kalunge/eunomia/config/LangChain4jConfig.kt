@@ -1,0 +1,55 @@
+package io.kalunge.eunomia.config
+
+import dev.langchain4j.model.chat.ChatLanguageModel
+import dev.langchain4j.model.openai.OpenAiChatModel
+import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Profile
+import java.time.Duration
+
+/**
+ * LangChain4j wiring.
+ *
+ * The Extractor (and later Mapper/Impact/Summarizer) agents depend on
+ * a ChatLanguageModel. In production that's Groq's Llama 3.3 70B via
+ * the OpenAI-compatible endpoint. Tests provide their own stub bean
+ * under the @Profile("test") guard so we never call the real Groq API
+ * from CI.
+ *
+ * Why OpenAiChatModel for Groq:
+ *   Groq exposes an OpenAI-compatible REST surface, so we can reuse
+ *   LangChain4j's OpenAI adapter by overriding the baseUrl. Saves us a
+ *   bespoke client and matches what the design doc says about strategy-
+ *   patterned providers.
+ */
+@Configuration
+@Profile("!test")
+class LangChain4jConfig {
+
+    private val log = LoggerFactory.getLogger(javaClass)
+
+    @Bean
+    fun chatModel(
+        @Value("\${eunomia.llm.groq.api-key:}") groqApiKey: String,
+        @Value("\${eunomia.llm.groq.model:llama-3.3-70b-versatile}") modelName: String,
+        @Value("\${eunomia.llm.groq.base-url:https://api.groq.com/openai/v1}") baseUrl: String,
+        @Value("\${eunomia.llm.groq.temperature:0.1}") temperature: Double,
+        @Value("\${eunomia.llm.groq.timeout-seconds:60}") timeoutSeconds: Long,
+    ): ChatLanguageModel {
+        if (groqApiKey.isBlank()) {
+            log.warn(
+                "GROQ_API_KEY is not set. Extractor calls will fail at runtime. " +
+                    "Set the env var in .env locally and in Render's Environment tab in production.",
+            )
+        }
+        return OpenAiChatModel.builder()
+            .baseUrl(baseUrl)
+            .apiKey(groqApiKey.ifBlank { "missing-key" })
+            .modelName(modelName)
+            .temperature(temperature)
+            .timeout(Duration.ofSeconds(timeoutSeconds))
+            .build()
+    }
+}
