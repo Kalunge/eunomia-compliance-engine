@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import {
   AlertCircle,
   ArrowLeft,
+  BookOpen,
   Calendar,
   CheckCircle2,
   FileText,
@@ -16,7 +17,7 @@ import { formatBytes, formatDateTime, formatRelative } from '@/lib/format'
 import { apiErrorMessage } from '@/lib/api'
 import StatusBadge from '@/components/StatusBadge'
 import EmptyState from '@/components/EmptyState'
-import type { GapStatus, Obligation, RegulationDetail, RegulationStatus } from '@/lib/types'
+import type { GapStatus, MatchedChunk, Obligation, RegulationDetail, RegulationStatus } from '@/lib/types'
 
 /**
  * Polls more aggressively while the workflow is in flight, then settles
@@ -24,10 +25,11 @@ import type { GapStatus, Obligation, RegulationDetail, RegulationStatus } from '
  */
 function pollIntervalFor(status: RegulationStatus | undefined): number | false {
   if (!status) return false
-  if (status === 'PARSING' || status === 'EXTRACTED' || status === 'MAPPED') {
+  if (status === 'PARSING' || status === 'EXTRACTED') {
+    // Workflow still in flight — Extractor or Mapper still running.
     return 4000
   }
-  // BRIEF_READY and FAILED are terminal — no point polling.
+  // MAPPED, BRIEF_READY, FAILED are terminal in Sprint 2 — no point polling.
   return false
 }
 
@@ -85,6 +87,10 @@ function RegulationContent({ regulation }: { regulation: RegulationDetail }) {
         </div>
       )}
 
+      {regulation.status === 'MAPPED' && regulation.obligations.length > 0 && (
+        <CoverageSummary obligations={regulation.obligations} />
+      )}
+
       <section className="mt-10">
         <header className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-slate-900">Extracted obligations</h2>
@@ -104,9 +110,7 @@ function RegulationContent({ regulation }: { regulation: RegulationDetail }) {
 
 function DetailHeader({ regulation }: { regulation: RegulationDetail }) {
   const isProcessing =
-    regulation.status === 'PARSING' ||
-    regulation.status === 'EXTRACTED' ||
-    regulation.status === 'MAPPED'
+    regulation.status === 'PARSING' || regulation.status === 'EXTRACTED'
 
   return (
     <header className="mt-6 mb-8 animate-fade-in">
@@ -224,6 +228,7 @@ function ObligationsList({
 }
 
 function ObligationCard({ obligation }: { obligation: Obligation }) {
+  const hasMatches = obligation.matchedChunks && obligation.matchedChunks.length > 0
   return (
     <li className="card p-5 transition-shadow hover:shadow-md">
       <div className="flex items-start gap-4">
@@ -252,9 +257,138 @@ function ObligationCard({ obligation }: { obligation: Obligation }) {
                 : `Pages ${obligation.pageStart}–${obligation.pageEnd}`}
             </p>
           )}
+
+          {hasMatches && <MatchedChunksList matches={obligation.matchedChunks} />}
+
+          {!hasMatches && obligation.gapStatus === 'GAP' && (
+            <div className="mt-4 flex items-start gap-2 rounded-lg border border-gap-100 bg-gap-50/60 px-3 py-2 text-xs text-gap-700">
+              <AlertCircle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+              <span>
+                No policy clause in your catalogue satisfies this obligation. Consider
+                drafting a new control, or update an existing policy to cover it.
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </li>
+  )
+}
+
+function MatchedChunksList({ matches }: { matches: MatchedChunk[] }) {
+  return (
+    <details className="mt-4 group" open>
+      <summary className="flex cursor-pointer items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500 hover:text-slate-700 select-none">
+        <BookOpen className="h-3.5 w-3.5 text-emerald-600" />
+        <span>
+          {matches.length} matching policy {matches.length === 1 ? 'clause' : 'clauses'}
+        </span>
+      </summary>
+      <ul className="mt-3 space-y-2.5">
+        {matches.map((m) => (
+          <MatchCard key={m.chunkId} match={m} />
+        ))}
+      </ul>
+    </details>
+  )
+}
+
+function MatchCard({ match }: { match: MatchedChunk }) {
+  return (
+    <li className="rounded-lg border border-emerald-100 bg-emerald-50/40 px-4 py-3">
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="truncate text-xs font-semibold text-emerald-900">
+          {match.policyTitle}{' '}
+          <span className="font-normal text-emerald-700/60">· chunk #{match.chunkIndex + 1}</span>
+        </p>
+        <ConfidencePill confidence={match.confidence} />
+      </div>
+      <p className="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-slate-700">
+        {match.text}
+      </p>
+      {match.reasoning && (
+        <p className="mt-2 text-[11px] italic text-slate-500">
+          <span className="font-medium not-italic text-slate-400">Why: </span>
+          {match.reasoning}
+        </p>
+      )}
+    </li>
+  )
+}
+
+function ConfidencePill({ confidence }: { confidence: number }) {
+  const pct = Math.round(confidence * 100)
+  const tone =
+    pct >= 80
+      ? 'bg-emerald-100 text-emerald-800'
+      : pct >= 60
+        ? 'bg-amber-100 text-amber-800'
+        : 'bg-slate-100 text-slate-700'
+  return (
+    <span
+      className={`flex-shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${tone}`}
+      title="LLM judge confidence"
+    >
+      {pct}%
+    </span>
+  )
+}
+
+function CoverageSummary({ obligations }: { obligations: Obligation[] }) {
+  const mapped = obligations.filter((o) => o.gapStatus === 'MAPPED').length
+  const gaps = obligations.filter((o) => o.gapStatus === 'GAP').length
+  const unknown = obligations.length - mapped - gaps
+  const coveragePct = obligations.length === 0 ? 0 : Math.round((mapped / obligations.length) * 100)
+
+  return (
+    <section className="mt-8 card p-5 animate-fade-in">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
+            Policy coverage
+          </h3>
+          <p className="mt-1 text-2xl font-bold text-slate-900">
+            {coveragePct}% <span className="text-sm font-normal text-slate-500">covered</span>
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <CoverageStat label="Mapped" value={mapped} tone="emerald" />
+          <CoverageStat label="Gaps" value={gaps} tone="gap" />
+          {unknown > 0 && <CoverageStat label="Pending" value={unknown} tone="slate" />}
+        </div>
+      </div>
+      <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
+        <div
+          className="h-full rounded-full bg-emerald-500 transition-all duration-700"
+          style={{ width: `${coveragePct}%` }}
+        />
+      </div>
+    </section>
+  )
+}
+
+function CoverageStat({
+  label,
+  value,
+  tone,
+}: {
+  label: string
+  value: number
+  tone: 'emerald' | 'gap' | 'slate'
+}) {
+  const styles =
+    tone === 'emerald'
+      ? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
+      : tone === 'gap'
+        ? 'bg-gap-50 text-gap-700 ring-gap-100'
+        : 'bg-slate-50 text-slate-700 ring-slate-200'
+  return (
+    <div
+      className={`flex-1 rounded-lg px-4 py-2 ring-1 ring-inset text-center min-w-[80px] ${styles}`}
+    >
+      <p className="text-xl font-bold leading-tight">{value}</p>
+      <p className="text-[11px] font-medium uppercase tracking-wider">{label}</p>
+    </div>
   )
 }
 

@@ -44,6 +44,16 @@ export interface RegulationSummary {
   processedAt: string | null
 }
 
+export interface MatchedChunk {
+  chunkId: string
+  policyId: string
+  policyTitle: string
+  chunkIndex: number
+  text: string
+  confidence: number
+  reasoning: string | null
+}
+
 export interface Obligation {
   id: string
   summary: string
@@ -52,6 +62,7 @@ export interface Obligation {
   pageEnd: number | null
   orderIndex: number
   gapStatus: GapStatus
+  matchedChunks: MatchedChunk[]
 }
 
 export interface RegulationDetail {
