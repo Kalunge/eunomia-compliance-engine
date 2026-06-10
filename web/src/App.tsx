@@ -3,6 +3,7 @@ import LandingPage from '@/pages/LandingPage'
 import LoginPage from '@/pages/LoginPage'
 import RegisterPage from '@/pages/RegisterPage'
 import RegulationsPage from '@/pages/RegulationsPage'
+import UploadRegulationPage from '@/pages/UploadRegulationPage'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import AppLayout from '@/components/AppLayout'
 
@@ -25,8 +26,17 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/regulations/upload"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <UploadRegulationPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
 
-      {/* Unknown routes — if signed-in send to app, otherwise the landing */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
