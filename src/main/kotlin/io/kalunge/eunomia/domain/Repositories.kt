@@ -47,3 +47,20 @@ interface ObligationRepository : JpaRepository<Obligation, UUID> {
 
     fun countByTenantIdAndGapStatus(tenantId: UUID, gapStatus: GapStatus): Long
 }
+
+@Repository
+interface PolicyRepository : JpaRepository<Policy, UUID> {
+    fun findByIdAndTenantId(id: UUID, tenantId: UUID): Policy?
+    fun findAllByTenantIdOrderByUploadedAtDesc(tenantId: UUID, pageable: Pageable): Page<Policy>
+    fun countByTenantId(tenantId: UUID): Long
+}
+
+@Repository
+interface PolicyChunkRepository : JpaRepository<PolicyChunk, UUID> {
+    fun findAllByPolicyIdAndTenantIdOrderByChunkIndexAsc(
+        policyId: UUID,
+        tenantId: UUID,
+    ): List<PolicyChunk>
+
+    fun countByPolicyIdAndTenantId(policyId: UUID, tenantId: UUID): Long
+}
