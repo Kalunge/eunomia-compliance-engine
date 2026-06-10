@@ -69,6 +69,13 @@ dependencies {
 	implementation("org.apache.tika:tika-core:2.9.2")
 	implementation("org.apache.tika:tika-parsers-standard-package:2.9.2")
 
+	// ── Tokenisation (for policy chunking) ───────────────────────────
+	// JTokkit implements OpenAI's BPE tokenisers (cl100k_base et al).
+	// Cohere uses a slightly different tokeniser, but the deviation is
+	// small enough that cl100k_base is a fine approximation for chunk
+	// boundary calculations.
+	implementation("com.knuddels:jtokkit:1.1.0")
+
 	// ── API docs ─────────────────────────────────────────────────────
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0")
 
