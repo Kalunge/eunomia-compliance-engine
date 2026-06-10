@@ -4,6 +4,7 @@ import LoginPage from '@/pages/LoginPage'
 import RegisterPage from '@/pages/RegisterPage'
 import RegulationsPage from '@/pages/RegulationsPage'
 import UploadRegulationPage from '@/pages/UploadRegulationPage'
+import RegulationDetailPage from '@/pages/RegulationDetailPage'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import AppLayout from '@/components/AppLayout'
 
@@ -32,6 +33,16 @@ export default function App() {
           <ProtectedRoute>
             <AppLayout>
               <UploadRegulationPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/regulations/:id"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <RegulationDetailPage />
             </AppLayout>
           </ProtectedRoute>
         }

@@ -10,9 +10,9 @@ import {
   ShieldCheck,
   Workflow,
   Zap,
-
 } from 'lucide-react'
 import Logo from '@/components/Logo'
+import { useAuthStore } from '@/stores/authStore'
 
 export default function LandingPage() {
   return (
@@ -34,6 +34,7 @@ export default function LandingPage() {
 // ─────────────────────────────────────────────────────────────────────
 
 function TopNav() {
+  const isAuthenticated = useAuthStore((s) => Boolean(s.token))
   return (
     <header className="absolute inset-x-0 top-0 z-30">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 lg:px-10">
@@ -44,13 +45,22 @@ function TopNav() {
           <a href="#stack" className="hover:text-slate-900 transition-colors">Architecture</a>
         </nav>
         <div className="flex items-center gap-3">
-          <Link to="/login" className="text-sm font-medium text-slate-700 hover:text-slate-900">
-            Sign in
-          </Link>
-          <Link to="/register" className="btn-primary text-sm">
-            Get started
-            <ArrowRight className="h-4 w-4" />
-          </Link>
+          {isAuthenticated ? (
+            <Link to="/regulations" className="btn-primary text-sm">
+              Open app
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          ) : (
+            <>
+              <Link to="/login" className="text-sm font-medium text-slate-700 hover:text-slate-900">
+                Sign in
+              </Link>
+              <Link to="/register" className="btn-primary text-sm">
+                Get started
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>
@@ -62,6 +72,7 @@ function TopNav() {
 // ─────────────────────────────────────────────────────────────────────
 
 function Hero() {
+  const isAuthenticated = useAuthStore((s) => Boolean(s.token))
   return (
     <section className="relative pt-32 pb-20 sm:pt-40 sm:pb-24 lg:pt-48 lg:pb-32 overflow-hidden">
       {/* Decorative background */}
@@ -98,13 +109,22 @@ function Hero() {
             who have outgrown Word and Excel.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Link to="/register" className="btn-primary text-base px-5 py-2.5">
-              Start free
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link to="/login" className="btn-secondary text-base px-5 py-2.5">
-              Sign in
-            </Link>
+            {isAuthenticated ? (
+              <Link to="/regulations" className="btn-primary text-base px-5 py-2.5">
+                Open app
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            ) : (
+              <>
+                <Link to="/register" className="btn-primary text-base px-5 py-2.5">
+                  Start free
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+                <Link to="/login" className="btn-secondary text-base px-5 py-2.5">
+                  Sign in
+                </Link>
+              </>
+            )}
           </div>
           <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-slate-500">
             <span className="inline-flex items-center gap-1.5">
@@ -423,6 +443,7 @@ function TechStack() {
 // ─────────────────────────────────────────────────────────────────────
 
 function CtaBanner() {
+  const isAuthenticated = useAuthStore((s) => Boolean(s.token))
   return (
     <section className="py-20 lg:py-28">
       <div className="mx-auto max-w-5xl px-6 lg:px-10">
@@ -451,19 +472,31 @@ function CtaBanner() {
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3">
-              <Link
-                to="/register"
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-6 py-3 font-medium text-brand-800 hover:bg-brand-50 transition-colors"
-              >
-                Get started
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link
-                to="/login"
-                className="inline-flex items-center justify-center rounded-lg border border-white/30 bg-white/10 px-6 py-3 font-medium text-white hover:bg-white/20 transition-colors backdrop-blur"
-              >
-                Sign in
-              </Link>
+              {isAuthenticated ? (
+                <Link
+                  to="/regulations"
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-6 py-3 font-medium text-brand-800 hover:bg-brand-50 transition-colors"
+                >
+                  Open app
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    to="/register"
+                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-6 py-3 font-medium text-brand-800 hover:bg-brand-50 transition-colors"
+                  >
+                    Get started
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                  <Link
+                    to="/login"
+                    className="inline-flex items-center justify-center rounded-lg border border-white/30 bg-white/10 px-6 py-3 font-medium text-white hover:bg-white/20 transition-colors backdrop-blur"
+                  >
+                    Sign in
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
