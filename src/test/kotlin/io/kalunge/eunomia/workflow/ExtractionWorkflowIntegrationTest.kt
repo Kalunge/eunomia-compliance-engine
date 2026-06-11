@@ -95,33 +95,35 @@ class ExtractionWorkflowIntegrationTest {
         )
 
         // 2. The async workflow fires after the upload's transaction
-        //    commits. The Extractor now chains to the Mapper, so the
-        //    terminal state is MAPPED. With no policy chunks indexed
-        //    in this tenant, every obligation will be flagged GAP.
+        //    commits. The full saga is Extractor → Mapper → Summarizer
+        //    so the terminal state is BRIEF_READY. With no policy
+        //    chunks indexed in this tenant, every obligation will be
+        //    flagged GAP.
         await()
-            .atMost(Duration.ofSeconds(15))
+            .atMost(Duration.ofSeconds(20))
             .pollInterval(Duration.ofMillis(150))
             .untilAsserted {
                 val current = regulationRepository.findByIdAndTenantId(regulationId, tenantId)
                 assertNotNull(current, "Regulation should still exist")
                 assertEquals(
-                    RegulationStatus.MAPPED,
+                    RegulationStatus.BRIEF_READY,
                     current!!.status,
-                    "Expected MAPPED after workflow, got ${current.status}. Error: ${current.lastError}",
+                    "Expected BRIEF_READY after full saga, got ${current.status}. Error: ${current.lastError}",
                 )
                 assertNotNull(current.processedAt, "processedAt should be set")
             }
 
         // 3. Detail endpoint now shows the extracted obligations, all
         //    of them flagged GAP (no policies were uploaded in this
-        //    tenant).
+        //    tenant), plus the rendered brief.
         mockMvc.perform(
             org.springframework.test.web.servlet.request.MockMvcRequestBuilders
                 .get("/api/v1/regulations/$regulationId")
                 .header("Authorization", "Bearer $token"),
         )
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.status").value("MAPPED"))
+            .andExpect(jsonPath("$.status").value("BRIEF_READY"))
+            .andExpect(jsonPath("$.briefMarkdown").exists())
             .andExpect(jsonPath("$.obligations.length()").value(2))
             .andExpect(jsonPath("$.obligations[0].summary").value("Agents must verify customer identity for transactions above KES 70,000."))
             .andExpect(jsonPath("$.obligations[0].orderIndex").value(0))
@@ -155,14 +157,15 @@ class ExtractionWorkflowIntegrationTest {
             objectMapper.readTree(uploadResp.response.contentAsString)["id"].asText(),
         )
 
-        // Wait for the default workflow to finish (the chained mapper
-        // ends in MAPPED here since no policies exist), then re-process
-        // with the broken stub.
+        // Wait for the default workflow to finish (the chained Mapper +
+        // Summarizer end at BRIEF_READY when no policies exist; the
+        // brief is rendered with all obligations flagged as gaps),
+        // then re-process with the broken stub.
         await()
-            .atMost(Duration.ofSeconds(15))
+            .atMost(Duration.ofSeconds(20))
             .untilAsserted {
                 val s = regulationRepository.findByIdAndTenantId(regulationId, tenantId)?.status
-                assertTrue(s == RegulationStatus.MAPPED || s == RegulationStatus.FAILED)
+                assertTrue(s == RegulationStatus.BRIEF_READY || s == RegulationStatus.FAILED)
             }
 
         workflow.processInBackground(regulationId, tenantId)

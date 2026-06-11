@@ -21,6 +21,7 @@ class RoutingStubChatLanguageModel(
     private val extractorResponse: String,
     private val mapperResponse: String,
     private val impactResponse: String = """{ "impactedIndices": [] }""",
+    private val summarizerResponse: String = "# Brief\n\nNo content (test stub).",
 ) : ChatLanguageModel {
 
     override fun generate(messages: MutableList<ChatMessage>): Response<AiMessage> {
@@ -28,6 +29,7 @@ class RoutingStubChatLanguageModel(
             ?.let { (it as SystemMessage).text() }
             ?: ""
         val response = when {
+            systemText.contains("compliance writer", ignoreCase = true) -> summarizerResponse
             systemText.contains("taxonomist", ignoreCase = true) -> impactResponse
             systemText.contains("compliance reviewer", ignoreCase = true) -> mapperResponse
             systemText.contains("compliance analyst", ignoreCase = true) -> extractorResponse

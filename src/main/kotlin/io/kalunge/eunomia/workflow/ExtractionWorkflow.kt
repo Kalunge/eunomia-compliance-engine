@@ -152,5 +152,6 @@ class ExtractionWorkflow(
         uploadedAt = from.uploadedAt,
         processedAt = processedAt,
         lastError = lastError,
+        briefMarkdown = from.briefMarkdown,
     )
 }

@@ -75,6 +75,13 @@ dependencies {
 	implementation("org.apache.tika:tika-core:2.9.2")
 	implementation("org.apache.tika:tika-parsers-standard-package:2.9.2")
 
+	// ── Brief rendering (Markdown → HTML → PDF) ──────────────────────
+	// commonmark-java is the reference CommonMark parser maintained by
+	// Atlassian; openhtmltopdf turns the rendered HTML into a PDF/A
+	// without native deps. Used by BriefPdfRenderer in Sprint 3.
+	implementation("org.commonmark:commonmark:0.22.0")
+	implementation("com.openhtmltopdf:openhtmltopdf-pdfbox:1.0.10")
+
 	// ── Tokenisation (for policy chunking) ───────────────────────────
 	// JTokkit implements OpenAI's BPE tokenisers (cl100k_base et al).
 	// Cohere uses a slightly different tokeniser, but the deviation is

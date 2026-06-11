@@ -127,15 +127,15 @@ class MappingWorkflowIntegrationTest {
         val regulationId = UUID.fromString(objectMapper.readTree(regResp.response.contentAsString)["id"].asText())
 
         await()
-            .atMost(Duration.ofSeconds(20))
+            .atMost(Duration.ofSeconds(25))
             .pollInterval(Duration.ofMillis(200))
             .untilAsserted {
                 val r = regulationRepository.findByIdAndTenantId(regulationId, tenantId)
                 assertNotNull(r, "Regulation should exist")
                 assertEquals(
-                    RegulationStatus.MAPPED,
+                    RegulationStatus.BRIEF_READY,
                     r!!.status,
-                    "Expected MAPPED, got ${r.status}. lastError=${r.lastError}",
+                    "Expected BRIEF_READY, got ${r.status}. lastError=${r.lastError}",
                 )
             }
 
@@ -156,7 +156,7 @@ class MappingWorkflowIntegrationTest {
         // ── 5. Detail endpoint surfaces both matches and impacts ────
         mockMvc.perform(get("/api/v1/regulations/$regulationId").header("Authorization", "Bearer $token"))
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.status").value("MAPPED"))
+            .andExpect(jsonPath("$.status").value("BRIEF_READY"))
             .andExpect(jsonPath("$.obligations[0].matchedChunks").isArray)
             .andExpect(jsonPath("$.obligations[0].matchedChunks[0].confidence").exists())
             .andExpect(jsonPath("$.obligations[0].matchedChunks[0].text").exists())

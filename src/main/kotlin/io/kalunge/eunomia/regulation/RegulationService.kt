@@ -11,7 +11,9 @@ import io.kalunge.eunomia.domain.Regulation
 import io.kalunge.eunomia.domain.RegulationRepository
 import io.kalunge.eunomia.domain.RegulationStatus
 import io.kalunge.eunomia.storage.StorageService
+import io.kalunge.eunomia.summarize.BriefPdfRenderer
 import io.kalunge.eunomia.workflow.ExtractionWorkflow
+import io.kalunge.eunomia.workflow.SummarizerWorkflow
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
@@ -41,6 +43,8 @@ class RegulationService(
     private val productServiceRepository: ProductServiceRepository,
     private val storage: StorageService,
     private val extractionWorkflow: ExtractionWorkflow,
+    private val summarizerWorkflow: SummarizerWorkflow,
+    private val briefPdfRenderer: BriefPdfRenderer,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -155,6 +159,33 @@ class RegulationService(
         return RegulationDetail.from(regulation, obligations, matchesByObligation, impactsByObligation)
     }
 
+    /**
+     * Trigger a (re-)generation of the brief. Rejected if the regulation
+     * is mid-saga — the auto-chain will produce a brief naturally.
+     */
+    fun regenerateBrief(tenantId: UUID, id: UUID) {
+        val regulation = regulationRepository.findByIdAndTenantId(id, tenantId)
+            ?: throw RegulationNotFoundException(id)
+        if (regulation.status in MID_SAGA_STATUSES) {
+            throw BriefRegenerateConflictException(id, regulation.status)
+        }
+        summarizerWorkflow.processInBackground(id, tenantId)
+        log.info("Brief regeneration requested for regulation {}", id)
+    }
+
+    @Transactional(readOnly = true)
+    fun briefMarkdown(tenantId: UUID, id: UUID): String {
+        val regulation = regulationRepository.findByIdAndTenantId(id, tenantId)
+            ?: throw RegulationNotFoundException(id)
+        return regulation.briefMarkdown ?: throw BriefNotReadyException(id, regulation.status)
+    }
+
+    @Transactional(readOnly = true)
+    fun briefPdf(tenantId: UUID, id: UUID): ByteArray {
+        val markdown = briefMarkdown(tenantId, id)
+        return briefPdfRenderer.render(markdown)
+    }
+
     companion object {
         const val MAX_TITLE_LENGTH = 240
 
@@ -168,7 +199,19 @@ class RegulationService(
             "text/markdown",
             "text/x-markdown",
         )
+
+        // Statuses where the brief shouldn't be regenerated — saga is
+        // already in flight and the auto-chain will produce one naturally.
+        private val MID_SAGA_STATUSES = setOf(
+            RegulationStatus.PARSING,
+            RegulationStatus.EXTRACTED,
+            RegulationStatus.BRIEF_GENERATING,
+        )
     }
 }
 
 class RegulationNotFoundException(val id: UUID) : RuntimeException("Regulation $id not found in this tenant.")
+class BriefRegenerateConflictException(val id: UUID, val currentStatus: RegulationStatus) :
+    RuntimeException("Cannot regenerate brief for regulation $id — workflow is $currentStatus.")
+class BriefNotReadyException(val id: UUID, val currentStatus: RegulationStatus) :
+    RuntimeException("Brief not yet generated for regulation $id — status is $currentStatus.")

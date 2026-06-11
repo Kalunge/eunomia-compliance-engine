@@ -51,6 +51,7 @@ data class RegulationDetail(
     val uploadedAt: Instant,
     val processedAt: Instant?,
     val lastError: String?,
+    val briefMarkdown: String?,
     val obligations: List<ObligationView>,
 ) {
     companion object {
@@ -69,6 +70,7 @@ data class RegulationDetail(
             uploadedAt = r.uploadedAt,
             processedAt = r.processedAt,
             lastError = r.lastError,
+            briefMarkdown = r.briefMarkdown,
             obligations = obligations.map {
                 ObligationView.from(
                     o = it,

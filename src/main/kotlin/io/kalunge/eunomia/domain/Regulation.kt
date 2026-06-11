@@ -12,16 +12,21 @@ import java.util.UUID
 /**
  * State machine for a regulation's progress through the agent workflow.
  *
- * PARSING      — uploaded, Tika still extracting text or Extractor not yet run
- * EXTRACTED    — obligations identified, mapper hasn't run
- * MAPPED       — mappings + gaps computed (Sprint 2)
- * BRIEF_READY  — Summarizer has produced the impact brief (Sprint 3)
- * FAILED       — workflow halted; lastError on the row explains why
+ * PARSING           — uploaded, Tika still extracting text or Extractor not yet run
+ * EXTRACTED         — obligations identified, mapper hasn't run
+ * MAPPED            — mappings + gaps + product impacts computed (Sprint 2)
+ * BRIEF_GENERATING  — Summarizer is composing the impact brief (Sprint 3)
+ * BRIEF_READY       — brief markdown is populated on the row
+ * FAILED            — workflow halted upstream of brief; lastError explains why
+ *
+ * When brief generation fails specifically (the mapping data is still
+ * valid), status reverts to MAPPED with lastError set — not FAILED.
  */
 enum class RegulationStatus {
     PARSING,
     EXTRACTED,
     MAPPED,
+    BRIEF_GENERATING,
     BRIEF_READY,
     FAILED,
 }
@@ -70,4 +75,7 @@ class Regulation(
 
     @Column(name = "last_error")
     val lastError: String? = null,
+
+    @Column(name = "brief_markdown", columnDefinition = "TEXT")
+    val briefMarkdown: String? = null,
 ) : TenantOwned

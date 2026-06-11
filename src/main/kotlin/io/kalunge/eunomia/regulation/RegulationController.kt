@@ -2,7 +2,9 @@ package io.kalunge.eunomia.regulation
 
 import io.kalunge.eunomia.auth.ErrorBody
 import io.kalunge.eunomia.tenancy.TenantContext
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -55,12 +57,54 @@ class RegulationController(
         return regulationService.detail(tenantId, id)
     }
 
+    /**
+     * Regenerate the impact brief. Returns 202 Accepted; the client
+     * polls the detail endpoint to see status flip
+     * MAPPED → BRIEF_GENERATING → BRIEF_READY (or back to MAPPED on
+     * failure with `lastError` populated).
+     */
+    @PostMapping("/{id}/brief")
+    fun regenerateBrief(@PathVariable id: UUID): ResponseEntity<Void> {
+        val tenantId = TenantContext.requireTenantId()
+        regulationService.regenerateBrief(tenantId, id)
+        return ResponseEntity.status(HttpStatus.ACCEPTED).build()
+    }
+
+    @GetMapping("/{id}/brief.md", produces = ["text/markdown;charset=UTF-8"])
+    fun briefMarkdown(@PathVariable id: UUID): ResponseEntity<String> {
+        val tenantId = TenantContext.requireTenantId()
+        val markdown = regulationService.briefMarkdown(tenantId, id)
+        return ResponseEntity.ok()
+            .contentType(MediaType.parseMediaType("text/markdown;charset=UTF-8"))
+            .body(markdown)
+    }
+
+    @GetMapping("/{id}/brief.pdf", produces = [MediaType.APPLICATION_PDF_VALUE])
+    fun briefPdf(@PathVariable id: UUID): ResponseEntity<ByteArray> {
+        val tenantId = TenantContext.requireTenantId()
+        val pdfBytes = regulationService.briefPdf(tenantId, id)
+        return ResponseEntity.ok()
+            .contentType(MediaType.APPLICATION_PDF)
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"impact-brief.pdf\"")
+            .body(pdfBytes)
+    }
+
     // ── Error mapping ────────────────────────────────────────────────
 
     @ExceptionHandler(RegulationNotFoundException::class)
     fun handleNotFound(e: RegulationNotFoundException): ResponseEntity<ErrorBody> =
         ResponseEntity.status(HttpStatus.NOT_FOUND)
             .body(ErrorBody("regulation_not_found", "Regulation ${e.id} not found."))
+
+    @ExceptionHandler(BriefRegenerateConflictException::class)
+    fun handleBriefConflict(e: BriefRegenerateConflictException): ResponseEntity<ErrorBody> =
+        ResponseEntity.status(HttpStatus.CONFLICT)
+            .body(ErrorBody("brief_regenerate_conflict", e.message ?: "Workflow in flight."))
+
+    @ExceptionHandler(BriefNotReadyException::class)
+    fun handleBriefNotReady(e: BriefNotReadyException): ResponseEntity<ErrorBody> =
+        ResponseEntity.status(HttpStatus.CONFLICT)
+            .body(ErrorBody("brief_not_ready", e.message ?: "Brief not generated yet."))
 
     @ExceptionHandler(IllegalArgumentException::class)
     fun handleBadInput(e: IllegalArgumentException): ResponseEntity<ErrorBody> =

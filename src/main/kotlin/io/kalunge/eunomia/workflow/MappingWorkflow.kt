@@ -47,6 +47,7 @@ class MappingWorkflow(
     private val policyChunkSearch: PolicyChunkSearch,
     private val mapperAgent: MapperAgent,
     private val impactWorkflow: ImpactWorkflow,
+    private val summarizerWorkflow: SummarizerWorkflow,
     private val tenantMetricsService: TenantMetricsService,
     @Value("\${eunomia.mapper.top-k:3}") private val topK: Int,
     @Value("\${eunomia.mapper.confidence-threshold:0.6}") private val confidenceThreshold: Double,
@@ -118,6 +119,12 @@ class MappingWorkflow(
         val elapsedMs = System.currentTimeMillis() - started
         log.info("Mapping complete for regulation {} — {} matched, {} gaps, {} skipped in {} ms",
             regulationId, matched, gaps, skipped, elapsedMs)
+
+        // Hand off to the Summarizer. processInBackground is @Async on
+        // a different bean, so this returns immediately and the brief
+        // renders on a fresh executor task. Same handoff pattern as
+        // Extractor → Mapper.
+        summarizerWorkflow.processInBackground(regulationId, tenantId)
     }
 
     private fun mapOne(obligation: Obligation, tenantId: UUID): MapOutcome {
@@ -230,6 +237,7 @@ class MappingWorkflow(
         uploadedAt = from.uploadedAt,
         processedAt = processedAt,
         lastError = lastError,
+        briefMarkdown = from.briefMarkdown,
     )
 
     private enum class MapOutcome { MATCHED, GAP }

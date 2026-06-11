@@ -89,11 +89,12 @@ class DashboardApiTest {
             objectMapper.readTree(uploadResp.response.contentAsString)["id"].asText(),
         )
 
-        // Wait for the full saga (PARSING → EXTRACTED → MAPPED), which
-        // includes the metrics recompute hook.
-        await().atMost(Duration.ofSeconds(20)).untilAsserted {
+        // Wait for the full saga (PARSING → EXTRACTED → MAPPED →
+        // BRIEF_GENERATING → BRIEF_READY) — the metrics recompute hook
+        // fires inside MappingWorkflow before the saga moves on.
+        await().atMost(Duration.ofSeconds(25)).untilAsserted {
             val r = regulationRepository.findByIdAndTenantId(regulationId, tenantId)
-            assertEquals(RegulationStatus.MAPPED, r?.status, "expected MAPPED, got ${r?.status}")
+            assertEquals(RegulationStatus.BRIEF_READY, r?.status, "expected BRIEF_READY, got ${r?.status}")
         }
 
         // Verify the hook populated the row in the DB directly.
