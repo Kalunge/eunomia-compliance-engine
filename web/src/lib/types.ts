@@ -26,6 +26,7 @@ export type RegulationStatus =
   | 'PARSING'
   | 'EXTRACTED'
   | 'MAPPED'
+  | 'BRIEF_GENERATING'
   | 'BRIEF_READY'
   | 'FAILED'
 
@@ -81,6 +82,7 @@ export interface RegulationDetail {
   uploadedAt: string
   processedAt: string | null
   lastError: string | null
+  briefMarkdown: string | null
   obligations: Obligation[]
 }
 

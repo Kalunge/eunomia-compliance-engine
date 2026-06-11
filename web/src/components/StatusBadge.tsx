@@ -1,5 +1,13 @@
 import { clsx } from 'clsx'
-import { CheckCircle2, Clock, FileText, Sparkles, AlertCircle, BookOpen } from 'lucide-react'
+import {
+  CheckCircle2,
+  Clock,
+  FileText,
+  Sparkles,
+  AlertCircle,
+  BookOpen,
+  PenLine,
+} from 'lucide-react'
 import type { PolicyStatus, RegulationStatus } from '@/lib/types'
 
 type AnyStatus = RegulationStatus | PolicyStatus
@@ -19,6 +27,11 @@ const STYLES: Record<AnyStatus, { label: string; classes: string; Icon: typeof C
     label: 'Mapped',
     classes: 'bg-violet-50 text-violet-700 ring-violet-200',
     Icon: Sparkles,
+  },
+  BRIEF_GENERATING: {
+    label: 'Composing brief',
+    classes: 'bg-amber-50 text-amber-700 ring-amber-200',
+    Icon: PenLine,
   },
   BRIEF_READY: {
     label: 'Brief ready',

@@ -41,4 +41,47 @@
   .card {
     @apply rounded-xl border border-slate-200 bg-white shadow-soft;
   }
+
+  /* Inline styling for the rendered impact brief Markdown. Keeps
+     hierarchy + spacing compact so the brief looks like a printed
+     document, not like an SEO blog post. */
+  .prose-brief {
+    @apply text-sm text-slate-700 leading-relaxed;
+  }
+  .prose-brief h1 {
+    @apply text-2xl font-bold text-slate-900 mt-0 mb-4 pb-2 border-b border-slate-200;
+  }
+  .prose-brief h2 {
+    @apply text-base font-semibold uppercase tracking-wider text-slate-700 mt-8 mb-3 pb-1 border-b border-slate-100;
+  }
+  .prose-brief h3 {
+    @apply text-sm font-semibold text-slate-900 mt-6 mb-2;
+  }
+  .prose-brief h4 {
+    @apply text-sm font-semibold text-slate-700 mt-4 mb-2;
+  }
+  .prose-brief p {
+    @apply my-3;
+  }
+  .prose-brief ul {
+    @apply my-3 list-disc pl-5 space-y-1;
+  }
+  .prose-brief ol {
+    @apply my-3 list-decimal pl-5 space-y-1;
+  }
+  .prose-brief li {
+    @apply leading-relaxed;
+  }
+  .prose-brief blockquote {
+    @apply my-3 border-l-2 border-brand-200 pl-4 italic text-slate-600;
+  }
+  .prose-brief strong {
+    @apply font-semibold text-slate-900;
+  }
+  .prose-brief em {
+    @apply italic;
+  }
+  .prose-brief a {
+    @apply text-brand-600 underline decoration-brand-200 underline-offset-2 hover:text-brand-700;
+  }
 }

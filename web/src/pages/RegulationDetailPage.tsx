@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
 import {
   AlertCircle,
@@ -6,13 +6,21 @@ import {
   BookOpen,
   Calendar,
   CheckCircle2,
+  Download,
   FileText,
   HardDrive,
   Loader2,
+  PenLine,
   Quote,
+  RefreshCw,
   Sparkles,
 } from 'lucide-react'
-import { fetchRegulationDetail } from '@/lib/regulations'
+import ReactMarkdown from 'react-markdown'
+import {
+  downloadBriefPdf,
+  fetchRegulationDetail,
+  regenerateBrief,
+} from '@/lib/regulations'
 import { formatBytes, formatDateTime, formatRelative } from '@/lib/format'
 import { apiErrorMessage } from '@/lib/api'
 import StatusBadge from '@/components/StatusBadge'
@@ -32,11 +40,11 @@ import type {
  */
 function pollIntervalFor(status: RegulationStatus | undefined): number | false {
   if (!status) return false
-  if (status === 'PARSING' || status === 'EXTRACTED') {
-    // Workflow still in flight — Extractor or Mapper still running.
+  // Workflow still in flight — Extractor, Mapper, or Summarizer running.
+  if (status === 'PARSING' || status === 'EXTRACTED' || status === 'BRIEF_GENERATING') {
     return 4000
   }
-  // MAPPED, BRIEF_READY, FAILED are terminal in Sprint 2 — no point polling.
+  // MAPPED, BRIEF_READY, FAILED are terminal — no point polling.
   return false
 }
 
@@ -82,7 +90,7 @@ function RegulationContent({ regulation }: { regulation: RegulationDetail }) {
       <DetailHeader regulation={regulation} />
       <MetaGrid regulation={regulation} />
 
-      {regulation.lastError && (
+      {regulation.lastError && regulation.status !== 'MAPPED' && (
         <div className="card mt-6 p-6 border-rose-200 bg-rose-50">
           <div className="flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-rose-600 flex-shrink-0 mt-0.5" />
@@ -94,9 +102,16 @@ function RegulationContent({ regulation }: { regulation: RegulationDetail }) {
         </div>
       )}
 
-      {regulation.status === 'MAPPED' && regulation.obligations.length > 0 && (
-        <CoverageSummary obligations={regulation.obligations} />
+      {(regulation.status === 'MAPPED' ||
+        regulation.status === 'BRIEF_GENERATING' ||
+        regulation.status === 'BRIEF_READY') && (
+        <BriefSection regulation={regulation} />
       )}
+
+      {(regulation.status === 'MAPPED' || regulation.status === 'BRIEF_READY') &&
+        regulation.obligations.length > 0 && (
+          <CoverageSummary obligations={regulation.obligations} />
+        )}
 
       <section className="mt-10">
         <header className="flex items-center justify-between mb-4">
@@ -117,7 +132,9 @@ function RegulationContent({ regulation }: { regulation: RegulationDetail }) {
 
 function DetailHeader({ regulation }: { regulation: RegulationDetail }) {
   const isProcessing =
-    regulation.status === 'PARSING' || regulation.status === 'EXTRACTED'
+    regulation.status === 'PARSING' ||
+    regulation.status === 'EXTRACTED' ||
+    regulation.status === 'BRIEF_GENERATING'
 
   return (
     <header className="mt-6 mb-8 animate-fade-in">
@@ -284,6 +301,140 @@ function ObligationCard({ obligation }: { obligation: Obligation }) {
       </div>
     </li>
   )
+}
+
+function BriefSection({ regulation }: { regulation: RegulationDetail }) {
+  const queryClient = useQueryClient()
+  const isGenerating = regulation.status === 'BRIEF_GENERATING'
+  const isReady = regulation.status === 'BRIEF_READY'
+  const briefFailed =
+    regulation.status === 'MAPPED' &&
+    regulation.lastError != null &&
+    regulation.lastError.toLowerCase().includes('brief')
+
+  const regenerate = useMutation({
+    mutationFn: () => regenerateBrief(regulation.id),
+    onSuccess: () => {
+      // Immediately refetch so the polling can take over from BRIEF_GENERATING.
+      queryClient.invalidateQueries({ queryKey: ['regulation', regulation.id] })
+    },
+  })
+
+  const download = useMutation({
+    mutationFn: () => downloadBriefPdf(regulation.id, `${slugify(regulation.title)}.pdf`),
+  })
+
+  return (
+    <section className="mt-8 card overflow-hidden animate-fade-in">
+      <header className="flex flex-col gap-3 border-b border-slate-100 bg-gradient-to-r from-brand-50/60 to-violet-50/40 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3">
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-white text-brand-600 shadow-sm">
+            <PenLine className="h-4.5 w-4.5" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-700">
+              Impact brief
+            </h2>
+            <p className="mt-0.5 text-xs text-slate-500">
+              {isReady && 'Composed by the Summarizer agent. Ready for leadership.'}
+              {isGenerating && 'Composing… this usually takes 5-10 seconds.'}
+              {briefFailed && 'Brief generation did not finish. Try regenerating.'}
+              {!isReady && !isGenerating && !briefFailed &&
+                'The Summarizer will start as soon as mapping finishes.'}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {isReady && (
+            <>
+              <button
+                type="button"
+                onClick={() => download.mutate()}
+                disabled={download.isPending}
+                className="btn-secondary"
+              >
+                <Download className="h-4 w-4" />
+                {download.isPending ? 'Preparing…' : 'Download PDF'}
+              </button>
+              <button
+                type="button"
+                onClick={() => regenerate.mutate()}
+                disabled={regenerate.isPending}
+                className="btn-secondary"
+              >
+                <RefreshCw className={`h-4 w-4 ${regenerate.isPending ? 'animate-spin' : ''}`} />
+                Regenerate
+              </button>
+            </>
+          )}
+          {briefFailed && (
+            <button
+              type="button"
+              onClick={() => regenerate.mutate()}
+              disabled={regenerate.isPending}
+              className="btn-primary"
+            >
+              <RefreshCw className={`h-4 w-4 ${regenerate.isPending ? 'animate-spin' : ''}`} />
+              {regenerate.isPending ? 'Starting…' : 'Try again'}
+            </button>
+          )}
+        </div>
+      </header>
+
+      <div className="px-6 py-6">
+        {isGenerating && <BriefGeneratingState />}
+        {briefFailed && (
+          <p className="text-sm text-rose-700">{regulation.lastError}</p>
+        )}
+        {isReady && regulation.briefMarkdown && (
+          <article className="prose-brief">
+            <ReactMarkdown>{regulation.briefMarkdown}</ReactMarkdown>
+          </article>
+        )}
+        {regulation.status === 'MAPPED' && !briefFailed && (
+          <p className="text-sm text-slate-500 italic">
+            Brief composition will start automatically when mapping completes. If it doesn't,
+            click <span className="font-medium not-italic">Regenerate</span> below.
+          </p>
+        )}
+        {regenerate.isError && (
+          <p className="mt-3 text-sm text-rose-700">
+            Could not start regeneration: {apiErrorMessage(regenerate.error)}
+          </p>
+        )}
+        {download.isError && (
+          <p className="mt-3 text-sm text-rose-700">
+            Could not download PDF: {apiErrorMessage(download.error)}
+          </p>
+        )}
+      </div>
+    </section>
+  )
+}
+
+function BriefGeneratingState() {
+  return (
+    <div className="flex flex-col items-center justify-center py-8 text-center">
+      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+      <p className="mt-4 text-sm font-medium text-slate-700">Eunomia is composing the brief</p>
+      <p className="mt-1 max-w-md text-xs text-slate-500">
+        The Summarizer agent reads each obligation, every mapping, and the affected product
+        lines, then writes a structured brief suitable for senior leadership. Auto-refreshing
+        every 4 seconds.
+      </p>
+    </div>
+  )
+}
+
+function slugify(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 80) || 'impact-brief'
 }
 
 function ImpactedProductChips({ products }: { products: ImpactedProduct[] }) {
