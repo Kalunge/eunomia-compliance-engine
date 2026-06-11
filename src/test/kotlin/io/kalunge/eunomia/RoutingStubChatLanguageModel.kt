@@ -20,6 +20,7 @@ import dev.langchain4j.model.output.Response
 class RoutingStubChatLanguageModel(
     private val extractorResponse: String,
     private val mapperResponse: String,
+    private val impactResponse: String = """{ "impactedIndices": [] }""",
 ) : ChatLanguageModel {
 
     override fun generate(messages: MutableList<ChatMessage>): Response<AiMessage> {
@@ -27,6 +28,7 @@ class RoutingStubChatLanguageModel(
             ?.let { (it as SystemMessage).text() }
             ?: ""
         val response = when {
+            systemText.contains("taxonomist", ignoreCase = true) -> impactResponse
             systemText.contains("compliance reviewer", ignoreCase = true) -> mapperResponse
             systemText.contains("compliance analyst", ignoreCase = true) -> extractorResponse
             else -> """{ "obligations": [] }"""

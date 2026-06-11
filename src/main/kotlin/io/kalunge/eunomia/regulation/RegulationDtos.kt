@@ -5,6 +5,7 @@ import io.kalunge.eunomia.domain.GapStatus
 import io.kalunge.eunomia.domain.Obligation
 import io.kalunge.eunomia.domain.ObligationPolicyMatch
 import io.kalunge.eunomia.domain.PolicyChunk
+import io.kalunge.eunomia.domain.ProductService
 import io.kalunge.eunomia.domain.Regulation
 import io.kalunge.eunomia.domain.RegulationStatus
 import java.time.Instant
@@ -57,6 +58,7 @@ data class RegulationDetail(
             r: Regulation,
             obligations: List<Obligation>,
             matchesByObligation: Map<UUID, List<MatchedChunkView>> = emptyMap(),
+            impactsByObligation: Map<UUID, List<ImpactedProductView>> = emptyMap(),
         ) = RegulationDetail(
             id = r.id,
             title = r.title,
@@ -68,7 +70,11 @@ data class RegulationDetail(
             processedAt = r.processedAt,
             lastError = r.lastError,
             obligations = obligations.map {
-                ObligationView.from(it, matchesByObligation[it.id].orEmpty())
+                ObligationView.from(
+                    o = it,
+                    matchedChunks = matchesByObligation[it.id].orEmpty(),
+                    impactedProducts = impactsByObligation[it.id].orEmpty(),
+                )
             },
         )
     }
@@ -83,9 +89,14 @@ data class ObligationView(
     val orderIndex: Int,
     val gapStatus: GapStatus,
     val matchedChunks: List<MatchedChunkView>,
+    val impactedProducts: List<ImpactedProductView>,
 ) {
     companion object {
-        fun from(o: Obligation, matchedChunks: List<MatchedChunkView> = emptyList()) = ObligationView(
+        fun from(
+            o: Obligation,
+            matchedChunks: List<MatchedChunkView> = emptyList(),
+            impactedProducts: List<ImpactedProductView> = emptyList(),
+        ) = ObligationView(
             id = o.id,
             summary = o.summary,
             sourceExcerpt = o.sourceExcerpt,
@@ -94,7 +105,18 @@ data class ObligationView(
             orderIndex = o.orderIndex,
             gapStatus = o.gapStatus,
             matchedChunks = matchedChunks,
+            impactedProducts = impactedProducts,
         )
+    }
+}
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
+data class ImpactedProductView(
+    val id: UUID,
+    val name: String,
+) {
+    companion object {
+        fun from(p: ProductService) = ImpactedProductView(id = p.id, name = p.name)
     }
 }
 

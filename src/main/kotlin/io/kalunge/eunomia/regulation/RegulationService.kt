@@ -1,10 +1,12 @@
 package io.kalunge.eunomia.regulation
 
 import io.kalunge.eunomia.domain.GapStatus
+import io.kalunge.eunomia.domain.ObligationImpactRepository
 import io.kalunge.eunomia.domain.ObligationPolicyMatchRepository
 import io.kalunge.eunomia.domain.ObligationRepository
 import io.kalunge.eunomia.domain.PolicyChunkRepository
 import io.kalunge.eunomia.domain.PolicyRepository
+import io.kalunge.eunomia.domain.ProductServiceRepository
 import io.kalunge.eunomia.domain.Regulation
 import io.kalunge.eunomia.domain.RegulationRepository
 import io.kalunge.eunomia.domain.RegulationStatus
@@ -35,6 +37,8 @@ class RegulationService(
     private val matchRepository: ObligationPolicyMatchRepository,
     private val policyChunkRepository: PolicyChunkRepository,
     private val policyRepository: PolicyRepository,
+    private val impactRepository: ObligationImpactRepository,
+    private val productServiceRepository: ProductServiceRepository,
     private val storage: StorageService,
     private val extractionWorkflow: ExtractionWorkflow,
 ) {
@@ -130,7 +134,25 @@ class RegulationService(
             .groupBy({ it.first }, { it.second })
             .mapValues { (_, views) -> views.sortedByDescending { it.confidence } }
 
-        return RegulationDetail.from(regulation, obligations, matchesByObligation)
+        // Impact tags — two more batch queries (obligation→impacts then
+        // impacts→products) for the same N+1 reason.
+        val impacts = impactRepository.findAllByObligationIdInAndTenantId(
+            obligations.map { it.id },
+            tenantId,
+        )
+        val productIdsCited = impacts.map { it.productServiceId }.toSet()
+        val productsById = if (productIdsCited.isEmpty()) emptyMap()
+        else productServiceRepository.findAllByIdInAndTenantId(productIdsCited, tenantId).associateBy { it.id }
+
+        val impactsByObligation = impacts
+            .mapNotNull { i ->
+                val product = productsById[i.productServiceId] ?: return@mapNotNull null
+                i.obligationId to ImpactedProductView.from(product)
+            }
+            .groupBy({ it.first }, { it.second })
+            .mapValues { (_, views) -> views.sortedBy { it.name } }
+
+        return RegulationDetail.from(regulation, obligations, matchesByObligation, impactsByObligation)
     }
 
     companion object {

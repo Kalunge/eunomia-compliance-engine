@@ -4,8 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import dev.langchain4j.model.chat.ChatLanguageModel
 import io.kalunge.eunomia.RoutingStubChatLanguageModel
 import io.kalunge.eunomia.TestcontainersConfiguration
+import io.kalunge.eunomia.domain.ObligationImpactRepository
 import io.kalunge.eunomia.domain.ObligationPolicyMatchRepository
 import io.kalunge.eunomia.domain.ObligationRepository
+import io.kalunge.eunomia.domain.ProductService
+import io.kalunge.eunomia.domain.ProductServiceRepository
 import io.kalunge.eunomia.domain.RegulationRepository
 import io.kalunge.eunomia.domain.RegulationStatus
 import io.kalunge.eunomia.domain.Tenant
@@ -58,6 +61,8 @@ class MappingWorkflowIntegrationTest {
     @Autowired private lateinit var regulationRepository: RegulationRepository
     @Autowired private lateinit var obligationRepository: ObligationRepository
     @Autowired private lateinit var matchRepository: ObligationPolicyMatchRepository
+    @Autowired private lateinit var productServiceRepository: ProductServiceRepository
+    @Autowired private lateinit var impactRepository: ObligationImpactRepository
 
     private lateinit var token: String
     private lateinit var tenantId: UUID
@@ -68,6 +73,17 @@ class MappingWorkflowIntegrationTest {
         val tenant = tenantRepository.save(Tenant(name = "Saga $slug", slug = slug))
         tenantId = tenant.id
         token = registerAndGetToken("saga-${System.nanoTime()}@example.com", slug)
+
+        // Seed a small product catalogue so the ImpactAnalyzer has
+        // something to tag against. Order matches the indices in
+        // SagaStubConfig.impactResponse below.
+        productServiceRepository.saveAll(
+            listOf(
+                ProductService(tenantId = tenantId, name = "Agent Banking"),
+                ProductService(tenantId = tenantId, name = "Mobile Banking"),
+                ProductService(tenantId = tenantId, name = "Retail Deposits"),
+            ),
+        )
     }
 
     @Test
@@ -133,7 +149,11 @@ class MappingWorkflowIntegrationTest {
             assertTrue(it.confidence >= 0.6, "Persisted matches should be above the 0.6 threshold")
         }
 
-        // ── 4. Detail endpoint surfaces the matches ─────────────────
+        // ── 4. Impact tags were also persisted (ImpactAnalyzer ran inline) ─
+        val impacts = impactRepository.findAllByObligationIdInAndTenantId(obligations.map { it.id }, tenantId)
+        assertTrue(impacts.isNotEmpty(), "Expected at least one impact tag to be persisted")
+
+        // ── 5. Detail endpoint surfaces both matches and impacts ────
         mockMvc.perform(get("/api/v1/regulations/$regulationId").header("Authorization", "Bearer $token"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.status").value("MAPPED"))
@@ -141,6 +161,8 @@ class MappingWorkflowIntegrationTest {
             .andExpect(jsonPath("$.obligations[0].matchedChunks[0].confidence").exists())
             .andExpect(jsonPath("$.obligations[0].matchedChunks[0].text").exists())
             .andExpect(jsonPath("$.obligations[0].matchedChunks[0].policyTitle").exists())
+            .andExpect(jsonPath("$.obligations[0].impactedProducts").isArray)
+            .andExpect(jsonPath("$.obligations[0].impactedProducts[0].name").exists())
     }
 
     private fun registerAndGetToken(email: String, slug: String): String {
@@ -178,6 +200,9 @@ class MappingWorkflowIntegrationTest {
                   ]
                 }
             """.trimIndent(),
+            // Catalogue size is 3 (Agent Banking, Mobile Banking, Retail Deposits)
+            // — return indices 0 and 1 so every obligation gets two tags.
+            impactResponse = """{ "impactedIndices": [0, 1] }""",
         )
     }
 }

@@ -45,6 +45,7 @@ class MappingWorkflow(
     private val embeddingService: EmbeddingService,
     private val policyChunkSearch: PolicyChunkSearch,
     private val mapperAgent: MapperAgent,
+    private val impactWorkflow: ImpactWorkflow,
     @Value("\${eunomia.mapper.top-k:5}") private val topK: Int,
     @Value("\${eunomia.mapper.confidence-threshold:0.6}") private val confidenceThreshold: Double,
 ) {
@@ -85,6 +86,11 @@ class MappingWorkflow(
                 null -> skipped++
             }
         }
+
+        // Tag impacts inline (sync) before marking MAPPED so the user
+        // sees a single status transition with full enrichment in place.
+        runCatching { impactWorkflow.tagAll(regulationId, tenantId) }
+            .onFailure { log.warn("Impact tagging step failed (non-fatal) for regulation {}: {}", regulationId, it.message) }
 
         markRegulationMapped(regulation)
 

@@ -78,3 +78,19 @@ interface ObligationPolicyMatchRepository : JpaRepository<ObligationPolicyMatch,
 
     fun deleteAllByObligationIdAndTenantId(obligationId: UUID, tenantId: UUID)
 }
+
+@Repository
+interface ProductServiceRepository : JpaRepository<ProductService, UUID> {
+    fun findAllByTenantIdOrderByNameAsc(tenantId: UUID): List<ProductService>
+    fun findAllByIdInAndTenantId(ids: Collection<UUID>, tenantId: UUID): List<ProductService>
+}
+
+@Repository
+interface ObligationImpactRepository : JpaRepository<ObligationImpact, UUID> {
+    fun findAllByObligationIdAndTenantId(obligationId: UUID, tenantId: UUID): List<ObligationImpact>
+    fun findAllByObligationIdInAndTenantId(
+        obligationIds: Collection<UUID>,
+        tenantId: UUID,
+    ): List<ObligationImpact>
+    fun deleteAllByObligationIdAndTenantId(obligationId: UUID, tenantId: UUID)
+}

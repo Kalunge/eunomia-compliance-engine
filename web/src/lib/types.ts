@@ -54,6 +54,11 @@ export interface MatchedChunk {
   reasoning: string | null
 }
 
+export interface ImpactedProduct {
+  id: string
+  name: string
+}
+
 export interface Obligation {
   id: string
   summary: string
@@ -63,6 +68,7 @@ export interface Obligation {
   orderIndex: number
   gapStatus: GapStatus
   matchedChunks: MatchedChunk[]
+  impactedProducts: ImpactedProduct[]
 }
 
 export interface RegulationDetail {

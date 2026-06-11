@@ -17,7 +17,14 @@ import { formatBytes, formatDateTime, formatRelative } from '@/lib/format'
 import { apiErrorMessage } from '@/lib/api'
 import StatusBadge from '@/components/StatusBadge'
 import EmptyState from '@/components/EmptyState'
-import type { GapStatus, MatchedChunk, Obligation, RegulationDetail, RegulationStatus } from '@/lib/types'
+import type {
+  GapStatus,
+  ImpactedProduct,
+  MatchedChunk,
+  Obligation,
+  RegulationDetail,
+  RegulationStatus,
+} from '@/lib/types'
 
 /**
  * Polls more aggressively while the workflow is in flight, then settles
@@ -258,6 +265,10 @@ function ObligationCard({ obligation }: { obligation: Obligation }) {
             </p>
           )}
 
+          {obligation.impactedProducts && obligation.impactedProducts.length > 0 && (
+            <ImpactedProductChips products={obligation.impactedProducts} />
+          )}
+
           {hasMatches && <MatchedChunksList matches={obligation.matchedChunks} />}
 
           {!hasMatches && obligation.gapStatus === 'GAP' && (
@@ -272,6 +283,24 @@ function ObligationCard({ obligation }: { obligation: Obligation }) {
         </div>
       </div>
     </li>
+  )
+}
+
+function ImpactedProductChips({ products }: { products: ImpactedProduct[] }) {
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-1.5">
+      <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400 mr-1">
+        Affects
+      </span>
+      {products.map((p) => (
+        <span
+          key={p.id}
+          className="inline-flex items-center rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700 ring-1 ring-inset ring-violet-100"
+        >
+          {p.name}
+        </span>
+      ))}
+    </div>
   )
 }
 
