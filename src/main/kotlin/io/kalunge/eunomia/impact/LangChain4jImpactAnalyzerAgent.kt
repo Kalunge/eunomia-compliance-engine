@@ -97,9 +97,12 @@ class LangChain4jImpactAnalyzerAgent(
             3. An obligation "affects" a product when the obligation imposes a
                control, restriction, or reporting requirement that the bank would
                apply at that product's operational layer.
-            4. If the obligation is generic enough to touch every product (e.g.,
-               entity-wide reporting), include all indices.
-            5. If unsure whether an index applies, exclude it. Precision over recall.
+            4. Prefer returning 1-4 indices. Only return more than 6 if the
+               obligation explicitly names that many specific product lines. Do
+               not return every catalogue entry just because the obligation is
+               broadly applicable — pick the products where the rule lands first.
+            5. If unsure whether an index applies, exclude it. Precision over
+               recall — false positives confuse the impact brief.
 
             Output strict JSON only, no markdown, no commentary:
             { "impactedIndices": [0, 3, 7] }

@@ -80,6 +80,12 @@ eunomia:
     # exhaust the budget and the rest fail. 4s spacing keeps ~3 calls
     # per minute well under the cap. Set to 0 on a paid tier.
     call-delay-ms: ${MAPPER_CALL_DELAY_MS:4000}
+  impact:
+    # Hard cap on how many product/service chips one obligation can
+    # carry. The LLM is sometimes overeager (e.g. tagging all 12
+    # catalogue entries on a generic reporting obligation); this trims
+    # the visual noise without changing the agent's interface.
+    max-per-obligation: ${IMPACT_MAX_PER_OBLIGATION:6}
   storage:
     local:
       # Sprint 1 stores uploaded blobs on the local filesystem. Container
