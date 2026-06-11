@@ -50,6 +50,11 @@ class LangChain4jConfig {
             .modelName(modelName)
             .temperature(temperature)
             .timeout(Duration.ofSeconds(timeoutSeconds))
+            // Default is 3 retries with short exponential backoff (~3s
+            // cumulative). Groq's free-tier TPM rate-limit message hints
+            // 8-14s; 5 retries gives 1+2+4+8+16 = ~31s headroom which
+            // clears the rolling window. Tune lower on a paid tier.
+            .maxRetries(5)
             .build()
     }
 }

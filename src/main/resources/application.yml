@@ -70,10 +70,16 @@ eunomia:
       issuer: ${JWT_ISSUER:eunomia}
   mapper:
     # ANN top-K — how many candidate policy chunks per obligation the
-    # judge sees. Higher = more thorough, more LLM tokens.
-    top-k: ${MAPPER_TOP_K:5}
+    # judge sees. Default 3 keeps prompt size comfortably under Groq's
+    # free-tier TPM cap (12k tokens/min). Bump to 5 on a paid tier.
+    top-k: ${MAPPER_TOP_K:3}
     # LLM judge confidence below this → not a match. Above → persisted.
     confidence-threshold: ${MAPPER_CONFIDENCE_THRESHOLD:0.6}
+    # Throttle between Mapper LLM calls. Free-tier Groq has a 12k TPM
+    # rolling window — without spacing, ~3-4 calls in quick succession
+    # exhaust the budget and the rest fail. 4s spacing keeps ~3 calls
+    # per minute well under the cap. Set to 0 on a paid tier.
+    call-delay-ms: ${MAPPER_CALL_DELAY_MS:4000}
   storage:
     local:
       # Sprint 1 stores uploaded blobs on the local filesystem. Container

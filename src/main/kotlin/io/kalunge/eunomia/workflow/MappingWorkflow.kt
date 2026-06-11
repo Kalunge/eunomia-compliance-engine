@@ -46,8 +46,9 @@ class MappingWorkflow(
     private val policyChunkSearch: PolicyChunkSearch,
     private val mapperAgent: MapperAgent,
     private val impactWorkflow: ImpactWorkflow,
-    @Value("\${eunomia.mapper.top-k:5}") private val topK: Int,
+    @Value("\${eunomia.mapper.top-k:3}") private val topK: Int,
     @Value("\${eunomia.mapper.confidence-threshold:0.6}") private val confidenceThreshold: Double,
+    @Value("\${eunomia.mapper.call-delay-ms:4000}") private val callDelayMs: Long,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -75,7 +76,7 @@ class MappingWorkflow(
         var gaps = 0
         var skipped = 0
 
-        for (obligation in obligations) {
+        for ((idx, obligation) in obligations.withIndex()) {
             val outcome = runCatching { mapOne(obligation, tenantId) }
                 .onFailure { log.warn("Mapping obligation {} failed: {}", obligation.id, it.message) }
                 .getOrNull()
@@ -84,6 +85,18 @@ class MappingWorkflow(
                 MapOutcome.MATCHED -> matched++
                 MapOutcome.GAP -> gaps++
                 null -> skipped++
+            }
+
+            // Throttle between calls so we don't blow through Groq's
+            // free-tier TPM cap. Skip the wait after the last obligation.
+            if (idx < obligations.size - 1 && callDelayMs > 0) {
+                try {
+                    Thread.sleep(callDelayMs)
+                } catch (e: InterruptedException) {
+                    Thread.currentThread().interrupt()
+                    log.warn("Mapping interrupted between obligations; aborting workflow")
+                    break
+                }
             }
         }
 

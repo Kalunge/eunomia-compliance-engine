@@ -9,3 +9,8 @@ eunomia:
     local:
       # Tests write tiny blobs into a JVM-tmp folder; the OS cleans up.
       root: ${java.io.tmpdir}/eunomia-test-storage
+  mapper:
+    # The production default throttles between Mapper calls to stay
+    # under Groq's free-tier TPM cap. Tests use a stub model with no
+    # rate limit and don't want sleep wasting CI time.
+    call-delay-ms: 0
