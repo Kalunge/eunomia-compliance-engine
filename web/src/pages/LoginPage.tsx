@@ -22,7 +22,7 @@ export default function LoginPage() {
     onSuccess: (data) => {
       signIn({ token: data.token, user: data.user, tenantSlug })
       const dest =
-        (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? '/regulations'
+        (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? '/dashboard'
       navigate(dest, { replace: true })
     },
   })

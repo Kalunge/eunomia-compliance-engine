@@ -20,7 +20,7 @@ export default function RegisterPage() {
     mutationFn: registerRequest,
     onSuccess: (data) => {
       signIn({ token: data.token, user: data.user, tenantSlug })
-      navigate('/regulations', { replace: true })
+      navigate('/dashboard', { replace: true })
     },
   })
 

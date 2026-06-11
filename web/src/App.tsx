@@ -8,6 +8,7 @@ import RegulationDetailPage from '@/pages/RegulationDetailPage'
 import PoliciesPage from '@/pages/PoliciesPage'
 import UploadPolicyPage from '@/pages/UploadPolicyPage'
 import PolicyDetailPage from '@/pages/PolicyDetailPage'
+import DashboardPage from '@/pages/DashboardPage'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import AppLayout from '@/components/AppLayout'
 
@@ -20,6 +21,16 @@ export default function App() {
       <Route path="/register" element={<RegisterPage />} />
 
       {/* Authenticated surface */}
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <DashboardPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/regulations"
         element={

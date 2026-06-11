@@ -92,6 +92,23 @@ export interface PageResponse<T> {
   totalPages: number
 }
 
+export interface RecentRegulation {
+  id: string
+  title: string
+  status: RegulationStatus
+  obligationCount: number
+  gapCount: number
+  uploadedAt: string
+  processedAt: string | null
+}
+
+export interface DashboardSummary {
+  regulationsProcessed: number
+  openGaps: number
+  impactedProductCount: number
+  recentActivity: RecentRegulation[]
+}
+
 export type PolicyStatus = 'PARSING' | 'INDEXED' | 'FAILED'
 
 export interface PolicySummary {
