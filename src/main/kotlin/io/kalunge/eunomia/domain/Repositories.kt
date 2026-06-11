@@ -3,6 +3,9 @@ package io.kalunge.eunomia.domain
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Modifying
+import org.springframework.data.jpa.repository.Query
+import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
 import java.util.UUID
 
@@ -36,6 +39,7 @@ interface RegulationRepository : JpaRepository<Regulation, UUID> {
     fun findByIdAndTenantId(id: UUID, tenantId: UUID): Regulation?
     fun findAllByTenantIdOrderByUploadedAtDesc(tenantId: UUID, pageable: Pageable): Page<Regulation>
     fun countByTenantId(tenantId: UUID): Long
+    fun countByTenantIdAndStatusIn(tenantId: UUID, statuses: Collection<RegulationStatus>): Long
 }
 
 @Repository
@@ -93,4 +97,37 @@ interface ObligationImpactRepository : JpaRepository<ObligationImpact, UUID> {
         tenantId: UUID,
     ): List<ObligationImpact>
     fun deleteAllByObligationIdAndTenantId(obligationId: UUID, tenantId: UUID)
+
+    @Query("SELECT COUNT(DISTINCT i.productServiceId) FROM ObligationImpact i WHERE i.tenantId = :tenantId")
+    fun countDistinctProductsByTenantId(@Param("tenantId") tenantId: UUID): Long
+}
+
+@Repository
+interface TenantMetricsRepository : JpaRepository<TenantMetrics, UUID> {
+
+    /**
+     * Atomic UPSERT: insert a new row or update the existing one for
+     * this tenant in a single round-trip. Avoids the SELECT-then-save
+     * dance that Spring Data JPA does for manually-assigned IDs.
+     */
+    @Modifying
+    @Query(
+        value = """
+            INSERT INTO tenant_metrics
+                (tenant_id, regulations_processed, open_gaps, impacted_product_count, updated_at)
+            VALUES (:tenantId, :regulationsProcessed, :openGaps, :impactedProductCount, NOW())
+            ON CONFLICT (tenant_id) DO UPDATE SET
+                regulations_processed  = EXCLUDED.regulations_processed,
+                open_gaps              = EXCLUDED.open_gaps,
+                impacted_product_count = EXCLUDED.impacted_product_count,
+                updated_at             = NOW()
+        """,
+        nativeQuery = true,
+    )
+    fun upsert(
+        @Param("tenantId") tenantId: UUID,
+        @Param("regulationsProcessed") regulationsProcessed: Long,
+        @Param("openGaps") openGaps: Long,
+        @Param("impactedProductCount") impactedProductCount: Long,
+    )
 }

@@ -6,6 +6,7 @@ import io.kalunge.eunomia.domain.ObligationPolicyMatch
 import io.kalunge.eunomia.domain.ObligationPolicyMatchRepository
 import io.kalunge.eunomia.domain.ObligationRepository
 import io.kalunge.eunomia.domain.Regulation
+import io.kalunge.eunomia.dashboard.TenantMetricsService
 import io.kalunge.eunomia.domain.RegulationRepository
 import io.kalunge.eunomia.domain.RegulationStatus
 import io.kalunge.eunomia.embedding.EmbeddingService
@@ -46,6 +47,7 @@ class MappingWorkflow(
     private val policyChunkSearch: PolicyChunkSearch,
     private val mapperAgent: MapperAgent,
     private val impactWorkflow: ImpactWorkflow,
+    private val tenantMetricsService: TenantMetricsService,
     @Value("\${eunomia.mapper.top-k:3}") private val topK: Int,
     @Value("\${eunomia.mapper.confidence-threshold:0.6}") private val confidenceThreshold: Double,
     @Value("\${eunomia.mapper.call-delay-ms:4000}") private val callDelayMs: Long,
@@ -106,6 +108,12 @@ class MappingWorkflow(
             .onFailure { log.warn("Impact tagging step failed (non-fatal) for regulation {}: {}", regulationId, it.message) }
 
         markRegulationMapped(regulation)
+
+        // Refresh the dashboard's denormalised metrics for this tenant.
+        // Non-fatal — a metrics failure shouldn't poison the workflow,
+        // and the scheduled reconcile job will pick up any drift.
+        runCatching { tenantMetricsService.recalculate(tenantId) }
+            .onFailure { log.warn("Metrics recompute failed (non-fatal) for tenant {}: {}", tenantId, it.message) }
 
         val elapsedMs = System.currentTimeMillis() - started
         log.info("Mapping complete for regulation {} — {} matched, {} gaps, {} skipped in {} ms",
