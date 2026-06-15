@@ -1,0 +1,13 @@
+# Render Static Site rewrite rules.
+#
+# /api and /actuator requests are proxied (status 200, not 3xx) to the
+# EC2-hosted Spring Boot backend so the browser sees same-origin and the
+# axios client's baseURL: '/api' just works.
+#
+# The trailing /* /index.html rule is the SPA fallback: React Router
+# handles deep links by rendering index.html and letting the client-side
+# router resolve the path.
+
+/api/*       http://100.56.250.136:8080/api/:splat       200
+/actuator/*  http://100.56.250.136:8080/actuator/:splat  200
+/*           /index.html                                 200
