@@ -143,6 +143,7 @@ class ExtractionWorkflowIntegrationTest {
             documentParser = autowiredParser(),
             extractorAgent = io.kalunge.eunomia.extraction.LangChain4jExtractorAgent(brokenStub, objectMapper),
             mappingWorkflow = autowiredMappingWorkflow(),
+            eventPublisher = autowiredEventPublisher(),
         )
 
         // Manually upload through the API to get a real regulation row,
@@ -189,11 +190,13 @@ class ExtractionWorkflowIntegrationTest {
     @Autowired private lateinit var storageService: io.kalunge.eunomia.storage.StorageService
     @Autowired private lateinit var parser: io.kalunge.eunomia.extraction.DocumentParser
     @Autowired private lateinit var mappingWorkflow: MappingWorkflow
+    @Autowired private lateinit var eventPublisher: io.kalunge.eunomia.events.WorkflowEventPublisher
 
     private fun autowiredObligationRepo() = obligationRepo
     private fun autowiredStorage() = storageService
     private fun autowiredParser() = parser
     private fun autowiredMappingWorkflow() = mappingWorkflow
+    private fun autowiredEventPublisher() = eventPublisher
 
     private fun registerAndGetToken(email: String, slug: String): String {
         val res = mockMvc.perform(

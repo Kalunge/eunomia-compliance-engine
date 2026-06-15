@@ -2,6 +2,7 @@ package io.kalunge.eunomia.workflow
 
 import io.kalunge.eunomia.dashboard.TenantMetricsService
 import io.kalunge.eunomia.domain.ObligationImpactRepository
+import io.kalunge.eunomia.events.WorkflowEventPublisher
 import io.kalunge.eunomia.domain.ObligationPolicyMatchRepository
 import io.kalunge.eunomia.domain.ObligationRepository
 import io.kalunge.eunomia.domain.PolicyChunkRepository
@@ -47,6 +48,7 @@ class SummarizerWorkflow(
     private val productServiceRepository: ProductServiceRepository,
     private val summarizerAgent: SummarizerAgent,
     private val tenantMetricsService: TenantMetricsService,
+    private val eventPublisher: WorkflowEventPublisher,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -58,6 +60,10 @@ class SummarizerWorkflow(
             process(regulationId, tenantId)
         } catch (e: Exception) {
             log.error("Brief generation failed for {} (tenant {})", regulationId, tenantId, e)
+            eventPublisher.publishQuietly(
+                regulationId, tenantId, "workflow.failed",
+                mapOf("stage" to "summarizer", "message" to (e.message ?: e.javaClass.simpleName)),
+            )
             recordFailure(regulationId, tenantId, e)
         }
     }
@@ -66,6 +72,10 @@ class SummarizerWorkflow(
         val started = System.currentTimeMillis()
         val input = buildInput(regulationId, tenantId)
         log.info("Composing brief for regulation {} ({} obligations)", regulationId, input.obligations.size)
+        eventPublisher.publishQuietly(
+            regulationId, tenantId, "summarizer.start",
+            mapOf("obligationCount" to input.obligations.size),
+        )
 
         val markdown = if (input.obligations.isEmpty()) {
             EMPTY_OBLIGATIONS_PLACEHOLDER.format(input.regulationTitle)
@@ -79,6 +89,10 @@ class SummarizerWorkflow(
 
         val elapsedMs = System.currentTimeMillis() - started
         log.info("Brief ready for regulation {} ({} chars in {} ms)", regulationId, markdown.length, elapsedMs)
+        eventPublisher.publishQuietly(
+            regulationId, tenantId, "summarizer.complete",
+            mapOf("characters" to markdown.length, "elapsedMs" to elapsedMs),
+        )
     }
 
     private fun buildInput(regulationId: UUID, tenantId: UUID): BriefInput {

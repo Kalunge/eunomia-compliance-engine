@@ -103,6 +103,18 @@ interface ObligationImpactRepository : JpaRepository<ObligationImpact, UUID> {
 }
 
 @Repository
+interface WorkflowEventRepository : JpaRepository<WorkflowEvent, UUID> {
+    fun findAllByRegulationIdAndTenantIdAndSequenceNoGreaterThanOrderBySequenceNoAsc(
+        regulationId: UUID,
+        tenantId: UUID,
+        sequenceNo: Long,
+    ): List<WorkflowEvent>
+
+    @Query("SELECT COALESCE(MAX(e.sequenceNo), 0) FROM WorkflowEvent e WHERE e.regulationId = :regulationId")
+    fun maxSequence(@Param("regulationId") regulationId: UUID): Long
+}
+
+@Repository
 interface TenantMetricsRepository : JpaRepository<TenantMetrics, UUID> {
 
     /**

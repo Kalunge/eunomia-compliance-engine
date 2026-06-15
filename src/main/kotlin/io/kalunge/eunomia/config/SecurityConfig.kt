@@ -56,6 +56,12 @@ class SecurityConfig {
                         "/api/v1/auth/login",
                         "/api/v1/auth/register",
                     ).permitAll()
+                    // SSE endpoint authenticates via the `token` query
+                    // param inside the controller (EventSource can't
+                    // send the Authorization header). The path is
+                    // permitted here so the JWT filter doesn't reject
+                    // it first.
+                    .requestMatchers("/api/v1/regulations/*/events").permitAll()
                     .anyRequest().authenticated()
             }
             .httpBasic { it.disable() }

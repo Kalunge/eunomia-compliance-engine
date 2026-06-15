@@ -10,6 +10,7 @@ import io.kalunge.eunomia.dashboard.TenantMetricsService
 import io.kalunge.eunomia.domain.RegulationRepository
 import io.kalunge.eunomia.domain.RegulationStatus
 import io.kalunge.eunomia.embedding.EmbeddingService
+import io.kalunge.eunomia.events.WorkflowEventPublisher
 import io.kalunge.eunomia.mapping.ChunkCandidate
 import io.kalunge.eunomia.mapping.MapperAgent
 import io.kalunge.eunomia.mapping.ObligationContext
@@ -49,6 +50,7 @@ class MappingWorkflow(
     private val impactWorkflow: ImpactWorkflow,
     private val summarizerWorkflow: SummarizerWorkflow,
     private val tenantMetricsService: TenantMetricsService,
+    private val eventPublisher: WorkflowEventPublisher,
     @Value("\${eunomia.mapper.top-k:3}") private val topK: Int,
     @Value("\${eunomia.mapper.confidence-threshold:0.6}") private val confidenceThreshold: Double,
     @Value("\${eunomia.mapper.call-delay-ms:4000}") private val callDelayMs: Long,
@@ -62,6 +64,10 @@ class MappingWorkflow(
             process(regulationId, tenantId)
         } catch (e: Exception) {
             log.error("Mapping failed for regulation {} (tenant {})", regulationId, tenantId, e)
+            eventPublisher.publishQuietly(
+                regulationId, tenantId, "workflow.failed",
+                mapOf("stage" to "mapper", "message" to (e.message ?: e.javaClass.simpleName)),
+            )
             recordFailure(regulationId, tenantId, e)
         }
     }
@@ -74,13 +80,21 @@ class MappingWorkflow(
         val started = System.currentTimeMillis()
         log.info("Mapping {} obligations for regulation {} (k={}, threshold={})",
             obligations.size, regulationId, topK, confidenceThreshold)
+        eventPublisher.publishQuietly(
+            regulationId, tenantId, "mapper.start",
+            mapOf("obligationCount" to obligations.size, "topK" to topK, "threshold" to confidenceThreshold),
+        )
 
         var matched = 0
         var gaps = 0
         var skipped = 0
 
         for ((idx, obligation) in obligations.withIndex()) {
-            val outcome = runCatching { mapOne(obligation, tenantId) }
+            eventPublisher.publishQuietly(
+                regulationId, tenantId, "mapper.obligation.start",
+                mapOf("index" to idx + 1, "total" to obligations.size, "summary" to obligation.summary),
+            )
+            val outcome = runCatching { mapOne(obligation, regulationId, tenantId, idx + 1) }
                 .onFailure { log.warn("Mapping obligation {} failed: {}", obligation.id, it.message) }
                 .getOrNull()
 
@@ -102,6 +116,11 @@ class MappingWorkflow(
                 }
             }
         }
+
+        eventPublisher.publishQuietly(
+            regulationId, tenantId, "mapper.complete",
+            mapOf("matched" to matched, "gaps" to gaps, "skipped" to skipped),
+        )
 
         // Tag impacts inline (sync) before marking MAPPED so the user
         // sees a single status transition with full enrichment in place.
@@ -127,12 +146,20 @@ class MappingWorkflow(
         summarizerWorkflow.processInBackground(regulationId, tenantId)
     }
 
-    private fun mapOne(obligation: Obligation, tenantId: UUID): MapOutcome {
+    private fun mapOne(obligation: Obligation, regulationId: UUID, tenantId: UUID, index: Int): MapOutcome {
         val queryVec = embeddingService.embedQuery(obligation.summary)
         val candidates = policyChunkSearch.findNearest(tenantId, queryVec, topK)
+        eventPublisher.publishQuietly(
+            regulationId, tenantId, "mapper.obligation.candidates",
+            mapOf("index" to index, "candidateCount" to candidates.size),
+        )
 
         if (candidates.isEmpty()) {
             persistGap(obligation)
+            eventPublisher.publishQuietly(
+                regulationId, tenantId, "mapper.obligation.gap",
+                mapOf("index" to index, "reason" to "empty-catalog"),
+            )
             return MapOutcome.GAP
         }
 
@@ -146,10 +173,23 @@ class MappingWorkflow(
 
         return if (confirmed.isEmpty()) {
             persistGap(obligation)
+            eventPublisher.publishQuietly(
+                regulationId, tenantId, "mapper.obligation.gap",
+                mapOf("index" to index),
+            )
             MapOutcome.GAP
         } else {
             persistMatches(obligation, candidates, confirmed)
             persistMapped(obligation)
+            val topConfidence = confirmed.maxOf { it.confidence }
+            eventPublisher.publishQuietly(
+                regulationId, tenantId, "mapper.obligation.matched",
+                mapOf(
+                    "index" to index,
+                    "matchCount" to confirmed.size,
+                    "topConfidence" to topConfidence,
+                ),
+            )
             MapOutcome.MATCHED
         }
     }

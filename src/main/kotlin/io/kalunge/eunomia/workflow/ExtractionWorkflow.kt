@@ -5,6 +5,7 @@ import io.kalunge.eunomia.domain.ObligationRepository
 import io.kalunge.eunomia.domain.Regulation
 import io.kalunge.eunomia.domain.RegulationRepository
 import io.kalunge.eunomia.domain.RegulationStatus
+import io.kalunge.eunomia.events.WorkflowEventPublisher
 import io.kalunge.eunomia.extraction.DocumentParser
 import io.kalunge.eunomia.extraction.ExtractorAgent
 import io.kalunge.eunomia.storage.StorageService
@@ -39,6 +40,7 @@ class ExtractionWorkflow(
     private val documentParser: DocumentParser,
     private val extractorAgent: ExtractorAgent,
     private val mappingWorkflow: MappingWorkflow,
+    private val eventPublisher: WorkflowEventPublisher,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -52,6 +54,10 @@ class ExtractionWorkflow(
             // failure the row reflects WHAT failed. Log here so it
             // surfaces in container logs alongside the regulation ID.
             log.error("Workflow failed for regulation {} (tenant {})", regulationId, tenantId, e)
+            eventPublisher.publishQuietly(
+                regulationId, tenantId, "workflow.failed",
+                mapOf("stage" to "extractor", "message" to (e.message ?: e.javaClass.simpleName)),
+            )
             recordFailure(regulationId, tenantId, e)
         }
     }
@@ -62,12 +68,21 @@ class ExtractionWorkflow(
 
         val started = System.currentTimeMillis()
         log.info("Extracting regulation {} ({})", regulationId, regulation.sourceFilename)
+        eventPublisher.publishQuietly(regulationId, tenantId, "extractor.start", emptyMap())
 
         val parsedText = parseBlob(regulation)
         log.debug("Parsed {} characters from {}", parsedText.length, regulation.sourceFilename)
+        eventPublisher.publishQuietly(
+            regulationId, tenantId, "extractor.parsed",
+            mapOf("characters" to parsedText.length),
+        )
 
         val extracted = extractorAgent.extract(parsedText)
         log.debug("LLM returned {} obligations", extracted.size)
+        eventPublisher.publishQuietly(
+            regulationId, tenantId, "extractor.identified",
+            mapOf("obligationCount" to extracted.size),
+        )
 
         persistObligations(regulation, extracted)
         markExtracted(regulation)

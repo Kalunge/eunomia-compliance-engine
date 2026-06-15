@@ -6,6 +6,7 @@ import io.kalunge.eunomia.domain.ObligationImpactRepository
 import io.kalunge.eunomia.domain.ObligationRepository
 import io.kalunge.eunomia.domain.ProductService
 import io.kalunge.eunomia.domain.ProductServiceRepository
+import io.kalunge.eunomia.events.WorkflowEventPublisher
 import io.kalunge.eunomia.impact.CatalogueItem
 import io.kalunge.eunomia.impact.ImpactAnalyzerAgent
 import io.kalunge.eunomia.impact.ObligationContext
@@ -32,6 +33,7 @@ class ImpactWorkflow(
     private val productServiceRepository: ProductServiceRepository,
     private val impactRepository: ObligationImpactRepository,
     private val impactAnalyzer: ImpactAnalyzerAgent,
+    private val eventPublisher: WorkflowEventPublisher,
     @Value("\${eunomia.impact.max-per-obligation:6}") private val maxPerObligation: Int,
 ) {
 
@@ -41,23 +43,43 @@ class ImpactWorkflow(
         val catalogue = productServiceRepository.findAllByTenantIdOrderByNameAsc(tenantId)
         if (catalogue.isEmpty()) {
             log.info("Skipping impact tagging — empty product catalogue for tenant {}", tenantId)
+            eventPublisher.publishQuietly(
+                regulationId, tenantId, "impact.skipped",
+                mapOf("reason" to "empty-catalogue"),
+            )
             return
         }
 
         val obligations = obligationRepository.findAllByRegulationIdAndTenantIdOrderByOrderIndexAsc(regulationId, tenantId)
         log.info("Tagging impacts for {} obligations (catalogue size = {})", obligations.size, catalogue.size)
+        eventPublisher.publishQuietly(
+            regulationId, tenantId, "impact.start",
+            mapOf("obligationCount" to obligations.size, "catalogueSize" to catalogue.size),
+        )
 
         var tagged = 0
         var untagged = 0
-        for (obligation in obligations) {
+        for ((idx, obligation) in obligations.withIndex()) {
             val outcome = runCatching { tagOne(obligation, catalogue, tenantId) }
                 .onFailure { log.warn("Impact tagging failed for obligation {}: {}", obligation.id, it.message) }
                 .getOrDefault(0)
-            if (outcome > 0) tagged++ else untagged++
+            if (outcome > 0) {
+                tagged++
+                eventPublisher.publishQuietly(
+                    regulationId, tenantId, "impact.tagged",
+                    mapOf("index" to idx + 1, "productCount" to outcome),
+                )
+            } else {
+                untagged++
+            }
         }
 
         log.info("Impact tagging complete for regulation {} — {} tagged, {} untagged",
             regulationId, tagged, untagged)
+        eventPublisher.publishQuietly(
+            regulationId, tenantId, "impact.complete",
+            mapOf("tagged" to tagged, "untagged" to untagged),
+        )
     }
 
     private fun tagOne(

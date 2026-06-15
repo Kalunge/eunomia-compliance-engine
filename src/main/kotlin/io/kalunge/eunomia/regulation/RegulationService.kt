@@ -10,6 +10,7 @@ import io.kalunge.eunomia.domain.ProductServiceRepository
 import io.kalunge.eunomia.domain.Regulation
 import io.kalunge.eunomia.domain.RegulationRepository
 import io.kalunge.eunomia.domain.RegulationStatus
+import io.kalunge.eunomia.events.WorkflowEventPublisher
 import io.kalunge.eunomia.storage.StorageService
 import io.kalunge.eunomia.summarize.BriefPdfRenderer
 import io.kalunge.eunomia.workflow.ExtractionWorkflow
@@ -45,6 +46,7 @@ class RegulationService(
     private val extractionWorkflow: ExtractionWorkflow,
     private val summarizerWorkflow: SummarizerWorkflow,
     private val briefPdfRenderer: BriefPdfRenderer,
+    private val eventPublisher: WorkflowEventPublisher,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -74,6 +76,17 @@ class RegulationService(
         )
         val saved = regulationRepository.save(regulation)
         log.info("Stored regulation id={} tenantId={} bytes={}", saved.id, tenantId, stored.sizeBytes)
+
+        eventPublisher.publishQuietly(
+            regulationId = saved.id,
+            tenantId = tenantId,
+            eventType = "regulation.uploaded",
+            payload = mapOf(
+                "title" to saved.title,
+                "sourceFilename" to saved.sourceFilename,
+                "sizeBytes" to saved.sizeBytes,
+            ),
+        )
 
         // Kick off extraction AFTER the upload's transaction commits.
         // Doing this inline would mean the async worker could find an
