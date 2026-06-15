@@ -135,3 +135,120 @@ jobs:
           echo ""
           echo "Recent objects in bucket:"
           aws s3 ls "s3://${DEPLOY_BUCKET}/backend/" --human-readable | tail -5
+
+      - name: Trigger deploy on EC2 via SSM
+        id: ssm
+        env:
+          EC2_INSTANCE_ID: i-01fd2669d11cda33d
+        run: |
+          # The deploy script runs as root on EC2 via SSM. It pulls the
+          # freshly-uploaded JAR from S3, atomically swaps it in, restarts
+          # the systemd unit, and rolls back to app.jar.prev if
+          # /actuator/health doesn't return UP within 120 seconds.
+          cat > /tmp/deploy.sh <<'DEPLOY_EOF'
+          #!/bin/bash
+          set -e
+          BUCKET="eunomia-deploys-799093034139"
+          APP_DIR="/home/ec2-user"
+          APP_JAR="$APP_DIR/app.jar"
+          NEW_JAR="$APP_DIR/app.jar.new"
+          PREV_JAR="$APP_DIR/app.jar.prev"
+          SERVICE="eunomia"
+          HEALTH_URL="http://localhost:8080/actuator/health"
+
+          echo "[deploy] downloading latest.jar from S3"
+          aws s3 cp "s3://${BUCKET}/backend/latest.jar" "$NEW_JAR"
+
+          if [ ! -s "$NEW_JAR" ]; then
+            echo "[deploy] ERROR: downloaded JAR is empty"
+            exit 1
+          fi
+
+          if [ -f "$APP_JAR" ]; then
+            echo "[deploy] backing up current JAR -> app.jar.prev"
+            cp "$APP_JAR" "$PREV_JAR"
+          fi
+
+          chown ec2-user:ec2-user "$NEW_JAR"
+          mv "$NEW_JAR" "$APP_JAR"
+          echo "[deploy] swapped in new JAR"
+
+          systemctl restart "$SERVICE"
+          echo "[deploy] systemctl restart $SERVICE issued"
+
+          for i in $(seq 1 24); do
+            sleep 5
+            if curl -fsS --max-time 5 "$HEALTH_URL" >/dev/null 2>&1; then
+              echo "[deploy] SUCCESS - health UP at attempt $i (~$((i*5))s)"
+              exit 0
+            fi
+            echo "[deploy] attempt $i/24: not yet healthy"
+          done
+
+          echo "[deploy] FAILED - health did not return UP within 120s"
+          if [ -f "$PREV_JAR" ]; then
+            echo "[deploy] rolling back to previous JAR"
+            mv "$PREV_JAR" "$APP_JAR"
+            systemctl restart "$SERVICE"
+            exit 2
+          fi
+          exit 3
+          DEPLOY_EOF
+
+          # aws ssm send-command --parameters expects {"commands":["..."]}.
+          # jq -Rs reads the whole script as one string and wraps it.
+          PARAMS=$(jq -Rs '{commands: [.]}' < /tmp/deploy.sh)
+
+          CMD_ID=$(aws ssm send-command \
+            --instance-ids "$EC2_INSTANCE_ID" \
+            --document-name AWS-RunShellScript \
+            --parameters "$PARAMS" \
+            --query 'Command.CommandId' \
+            --output text)
+
+          echo "SSM command ID: $CMD_ID"
+          echo "cmd_id=$CMD_ID" >> "$GITHUB_OUTPUT"
+          echo "instance_id=$EC2_INSTANCE_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for deploy + print EC2 output
+        env:
+          CMD_ID: ${{ steps.ssm.outputs.cmd_id }}
+          INSTANCE_ID: ${{ steps.ssm.outputs.instance_id }}
+        run: |
+          # Poll SSM until terminal status. Cap at 5 minutes; the deploy
+          # script itself caps at ~120s plus restart overhead.
+          STATUS=Pending
+          for i in $(seq 1 60); do
+            sleep 5
+            STATUS=$(aws ssm get-command-invocation \
+              --instance-id "$INSTANCE_ID" \
+              --command-id "$CMD_ID" \
+              --query 'Status' \
+              --output text 2>/dev/null || echo "Pending")
+            echo "[poll] $i/60: $STATUS"
+            case "$STATUS" in
+              Success|Failed|Cancelled|TimedOut) break ;;
+            esac
+          done
+
+          echo ""
+          echo "=== EC2 stdout ==="
+          aws ssm get-command-invocation \
+            --instance-id "$INSTANCE_ID" \
+            --command-id "$CMD_ID" \
+            --query 'StandardOutputContent' \
+            --output text
+
+          echo ""
+          echo "=== EC2 stderr ==="
+          aws ssm get-command-invocation \
+            --instance-id "$INSTANCE_ID" \
+            --command-id "$CMD_ID" \
+            --query 'StandardErrorContent' \
+            --output text
+
+          if [ "$STATUS" != "Success" ]; then
+            echo "::error::Deploy failed with status: $STATUS"
+            exit 1
+          fi
+          echo "Deploy succeeded."
