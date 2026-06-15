@@ -23,7 +23,9 @@ import {
 } from '@/lib/regulations'
 import { formatBytes, formatDateTime, formatRelative } from '@/lib/format'
 import { apiErrorMessage } from '@/lib/api'
+import { useWorkflowEvents } from '@/hooks/useWorkflowEvents'
 import StatusBadge from '@/components/StatusBadge'
+import LiveActivityFeed from '@/components/LiveActivityFeed'
 import EmptyState from '@/components/EmptyState'
 import type {
   GapStatus,
@@ -85,10 +87,17 @@ export default function RegulationDetailPage() {
 }
 
 function RegulationContent({ regulation }: { regulation: RegulationDetail }) {
+  // Stream events from the moment the page loads. The hook handles
+  // teardown on unmount and replay on (re)connect.
+  const { events, connectionState } = useWorkflowEvents(regulation.id)
+  const isLive = regulation.status !== 'BRIEF_READY' && regulation.status !== 'FAILED'
+
   return (
     <>
       <DetailHeader regulation={regulation} />
       <MetaGrid regulation={regulation} />
+
+      <LiveActivityFeed events={events} isLive={isLive} connectionState={connectionState} />
 
       {regulation.lastError && regulation.status !== 'MAPPED' && (
         <div className="card mt-6 p-6 border-rose-200 bg-rose-50">
