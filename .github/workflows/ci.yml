@@ -1,12 +1,14 @@
 name: CI
 
-# Run on every push to any branch and on PRs targeting main. The deploy job
-# only fires on push to main and only after tests pass.
+# Run tests on every push to any branch and on PRs targeting main.
+# The build-and-upload job only fires on push to main (or manual dispatch)
+# and only after tests pass.
 on:
   push:
     branches: ['**']
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -57,20 +59,79 @@ jobs:
           name: test-reports
           path: build/reports/tests/test
 
-  deploy:
-    name: Deploy to Render
+  build-and-upload:
+    name: Build + upload backend to S3
     needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
+    permissions:
+      # id-token: write is required for actions/configure-aws-credentials
+      # to mint the short-lived OIDC JWT presented to AWS STS. Scoped to
+      # this job (not the workflow) so the test job can't accidentally
+      # acquire AWS credentials.
+      id-token: write
+      contents: read
+    env:
+      AWS_REGION: us-east-1
+      AWS_ROLE_ARN: arn:aws:iam::799093034139:role/eunomia-github-deployer
+      DEPLOY_BUCKET: eunomia-deploys-799093034139
     steps:
-      - name: Trigger Render deploy hook
-        env:
-          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Build bootJar
+        run: ./gradlew --no-daemon bootJar -x test
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Locate built JAR
+        id: jar
         run: |
-          if [ -z "$RENDER_DEPLOY_HOOK" ]; then
-            echo "RENDER_DEPLOY_HOOK secret is not set. Skipping deploy."
-            exit 0
+          # bootJar produces eunomia-compliance-engine-<version>.jar; the
+          # plain jar (-plain.jar) is excluded.
+          JAR_PATH=$(ls build/libs/*.jar | grep -v -- '-plain' | head -1)
+          if [ -z "$JAR_PATH" ]; then
+            echo "::error::No JAR found in build/libs/"
+            ls -la build/libs/
+            exit 1
           fi
-          curl -fsSL -X POST "$RENDER_DEPLOY_HOOK"
-          echo "Render deploy hook triggered."
+          echo "Found: $JAR_PATH ($(du -h "$JAR_PATH" | cut -f1))"
+          echo "path=$JAR_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: Upload artifact to S3
+        run: |
+          SHA="${{ github.sha }}"
+          JAR_PATH="${{ steps.jar.outputs.path }}"
+          aws s3 cp "$JAR_PATH" "s3://${DEPLOY_BUCKET}/backend/app-${SHA}.jar"
+          aws s3 cp "$JAR_PATH" "s3://${DEPLOY_BUCKET}/backend/latest.jar"
+          echo ""
+          echo "Uploaded:"
+          echo "  s3://${DEPLOY_BUCKET}/backend/app-${SHA}.jar"
+          echo "  s3://${DEPLOY_BUCKET}/backend/latest.jar"
+          echo ""
+          echo "Recent objects in bucket:"
+          aws s3 ls "s3://${DEPLOY_BUCKET}/backend/" --human-readable | tail -5
