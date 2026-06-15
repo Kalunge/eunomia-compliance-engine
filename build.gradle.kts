@@ -59,8 +59,14 @@ dependencies {
 	runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
 
 	// ── AI integration ───────────────────────────────────────────────
+	// Note: deliberately NOT using langchain4j-spring-boot-starter.
+	// It auto-configures a ContentRetriever that demands a single
+	// EmbeddingModel bean, which clashes with our two Cohere beans
+	// (one tuned for "search_document", one for "search_query"). We
+	// hand-roll all agent + RAG wiring through @Configuration classes
+	// in io.kalunge.eunomia.config, so the starter's autoconfig isn't
+	// needed.
 	implementation("dev.langchain4j:langchain4j:${property("langchain4jVersion")}")
-	implementation("dev.langchain4j:langchain4j-spring-boot-starter:${property("langchain4jVersion")}")
 	implementation("dev.langchain4j:langchain4j-open-ai:${property("langchain4jVersion")}") // Groq is OpenAI-compatible
 	implementation("dev.langchain4j:langchain4j-cohere:${property("langchain4jVersion")}")
 	implementation("dev.langchain4j:langchain4j-pgvector:${property("langchain4jVersion")}")
@@ -69,8 +75,29 @@ dependencies {
 	implementation("org.apache.tika:tika-core:2.9.2")
 	implementation("org.apache.tika:tika-parsers-standard-package:2.9.2")
 
+	// ── Brief rendering (Markdown → HTML → PDF) ──────────────────────
+	// commonmark-java is the reference CommonMark parser maintained by
+	// Atlassian; openhtmltopdf turns the rendered HTML into a PDF/A
+	// without native deps. Used by BriefPdfRenderer in Sprint 3.
+	implementation("org.commonmark:commonmark:0.22.0")
+	implementation("com.openhtmltopdf:openhtmltopdf-pdfbox:1.0.10")
+
+	// ── Tokenisation (for policy chunking) ───────────────────────────
+	// JTokkit implements OpenAI's BPE tokenisers (cl100k_base et al).
+	// Cohere uses a slightly different tokeniser, but the deviation is
+	// small enough that cl100k_base is a fine approximation for chunk
+	// boundary calculations.
+	implementation("com.knuddels:jtokkit:1.1.0")
+
 	// ── API docs ─────────────────────────────────────────────────────
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0")
+
+	// ── Local-dev convenience ────────────────────────────────────────
+	// Lets Spring Boot read a .env file at the project root so dev
+	// secrets (JWT_SECRET, etc.) stay out of source control. In
+	// production (Render injects env vars directly) the absence of
+	// .env is a silent no-op.
+	implementation("me.paulschwarz:spring-dotenv:4.0.0")
 
 	// ── Test ─────────────────────────────────────────────────────────
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
@@ -85,6 +112,7 @@ dependencies {
 	testImplementation("org.assertj:assertj-core")
 	testImplementation("io.rest-assured:rest-assured:5.5.0")
 	testImplementation("org.wiremock:wiremock-standalone:3.9.2")
+	testImplementation("org.awaitility:awaitility-kotlin:4.2.2")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

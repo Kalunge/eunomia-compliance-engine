@@ -1,0 +1,87 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    @apply h-full;
+  }
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display tracking-tight;
+  }
+  code {
+    @apply font-mono text-[0.85em] bg-slate-100 px-1 py-0.5 rounded;
+  }
+}
+
+@layer components {
+  .focus-ring {
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 focus-visible:ring-offset-2 focus-visible:ring-offset-white;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-700 active:bg-brand-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus-ring;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 active:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus-ring;
+  }
+  .input-field {
+    @apply block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus-ring transition-colors;
+  }
+  .card {
+    @apply rounded-xl border border-slate-200 bg-white shadow-soft;
+  }
+
+  /* Inline styling for the rendered impact brief Markdown. Keeps
+     hierarchy + spacing compact so the brief looks like a printed
+     document, not like an SEO blog post. */
+  .prose-brief {
+    @apply text-sm text-slate-700 leading-relaxed;
+  }
+  .prose-brief h1 {
+    @apply text-2xl font-bold text-slate-900 mt-0 mb-4 pb-2 border-b border-slate-200;
+  }
+  .prose-brief h2 {
+    @apply text-base font-semibold uppercase tracking-wider text-slate-700 mt-8 mb-3 pb-1 border-b border-slate-100;
+  }
+  .prose-brief h3 {
+    @apply text-sm font-semibold text-slate-900 mt-6 mb-2;
+  }
+  .prose-brief h4 {
+    @apply text-sm font-semibold text-slate-700 mt-4 mb-2;
+  }
+  .prose-brief p {
+    @apply my-3;
+  }
+  .prose-brief ul {
+    @apply my-3 list-disc pl-5 space-y-1;
+  }
+  .prose-brief ol {
+    @apply my-3 list-decimal pl-5 space-y-1;
+  }
+  .prose-brief li {
+    @apply leading-relaxed;
+  }
+  .prose-brief blockquote {
+    @apply my-3 border-l-2 border-brand-200 pl-4 italic text-slate-600;
+  }
+  .prose-brief strong {
+    @apply font-semibold text-slate-900;
+  }
+  .prose-brief em {
+    @apply italic;
+  }
+  .prose-brief a {
+    @apply text-brand-600 underline decoration-brand-200 underline-offset-2 hover:text-brand-700;
+  }
+}

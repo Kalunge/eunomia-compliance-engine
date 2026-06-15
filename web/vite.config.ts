@@ -1,11 +1,12 @@
 import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
+import react from '@vitejs/plugin-react'
 import path from 'node:path'
 
-// Vite dev server proxies /api/** to the Spring Boot backend on :8080 so
-// frontend code never needs to know the backend's URL during local dev.
+// Dev server proxies /api/** and /ws/** to the Spring Boot backend on :8080.
+// Frontend code never needs to know the backend URL during local dev — no
+// CORS dance, no env var.
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [react()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),

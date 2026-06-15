@@ -1,6 +1,9 @@
 spring:
   application:
     name: eunomia
+  output:
+    ansi:
+      enabled: always
   datasource:
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5434/eunomia}
     username: ${DATABASE_USERNAME:eunomia}
@@ -42,6 +45,61 @@ management:
     readinessstate:
       enabled: true
 
+eunomia:
+  llm:
+    groq:
+      # Groq's REST surface is OpenAI-compatible; we point LangChain4j's
+      # OpenAI adapter at this base URL and authenticate with a Groq key.
+      api-key: ${GROQ_API_KEY:}
+      base-url: ${GROQ_BASE_URL:https://api.groq.com/openai/v1}
+      model: ${GROQ_MODEL:llama-3.3-70b-versatile}
+      temperature: ${GROQ_TEMPERATURE:0.1}
+      timeout-seconds: ${GROQ_TIMEOUT:60}
+    cohere:
+      # Cohere embed-english-v3.0 produces 1024-d L2-normalised vectors.
+      # Free tier is generous enough for the capstone.
+      api-key: ${COHERE_API_KEY:}
+      model: ${COHERE_MODEL:embed-english-v3.0}
+      timeout-seconds: ${COHERE_TIMEOUT:60}
+  security:
+    jwt:
+      # 64+ char random string. Generate with: openssl rand -base64 64
+      # No default — the app refuses to boot without it.
+      secret: ${JWT_SECRET}
+      expiry-seconds: ${JWT_EXPIRY_SECONDS:86400}
+      issuer: ${JWT_ISSUER:eunomia}
+  mapper:
+    # ANN top-K — how many candidate policy chunks per obligation the
+    # judge sees. Default 3 keeps prompt size comfortably under Groq's
+    # free-tier TPM cap (12k tokens/min). Bump to 5 on a paid tier.
+    top-k: ${MAPPER_TOP_K:3}
+    # LLM judge confidence below this → not a match. Above → persisted.
+    confidence-threshold: ${MAPPER_CONFIDENCE_THRESHOLD:0.6}
+    # Throttle between Mapper LLM calls. Free-tier Groq has a 12k TPM
+    # rolling window — without spacing, ~3-4 calls in quick succession
+    # exhaust the budget and the rest fail. 4s spacing keeps ~3 calls
+    # per minute well under the cap. Set to 0 on a paid tier.
+    call-delay-ms: ${MAPPER_CALL_DELAY_MS:4000}
+  impact:
+    # Hard cap on how many product/service chips one obligation can
+    # carry. The LLM is sometimes overeager (e.g. tagging all 12
+    # catalogue entries on a generic reporting obligation); this trims
+    # the visual noise without changing the agent's interface.
+    max-per-obligation: ${IMPACT_MAX_PER_OBLIGATION:6}
+  storage:
+    local:
+      # Sprint 1 stores uploaded blobs on the local filesystem. Container
+      # restarts on Render wipe this; that's acceptable for the capstone
+      # — re-upload during demos. Production would swap in an S3-backed
+      # StorageService bean.
+      root: ${STORAGE_ROOT:./data}
+
+# Allow PDF uploads up to ~25MB (CBK circulars are usually under 10MB).
+servlet:
+  multipart:
+    max-file-size: 25MB
+    max-request-size: 25MB
+
 springdoc:
   swagger-ui:
     path: /docs
@@ -52,4 +110,4 @@ logging:
     io.kalunge.eunomia: DEBUG
     org.hibernate.SQL: WARN
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n"
+    console: "%clr(%d{HH:mm:ss.SSS}){faint} %clr(%-5level) %clr([%12.12thread]){faint} %clr(%-32.32logger{32}){cyan} %msg%n"

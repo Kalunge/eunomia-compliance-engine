@@ -17,14 +17,15 @@ under development. This repo follows a three-sprint agile cadence with a
 live Trello board, recorded sprint demos, and CI/CD-gated deploys to
 Render.
 
-- Live deployment: *(coming end of Sprint 0)*
-- Task board: *(coming end of Sprint 0)*
+- Live deployment: <https://eunomia-m5yy.onrender.com>
+- Health probe: <https://eunomia-m5yy.onrender.com/actuator/health>
+- Task board: <https://trello.com/b/43NaWowH/eunomia-compliance-engine>
 
 ## Architecture summary
 
 A Kotlin + Spring Boot 3 backend that orchestrates a multi-agent workflow
 (Extractor → Mapper → ImpactAnalyzer → Summarizer) over uploaded
-regulatory documents. A Vue 3 dashboard provides authentication, the
+regulatory documents. A React + TypeScript dashboard provides authentication, the
 internal policy catalog, regulation ingestion, real-time agent
 telemetry, and an overview dashboard.
 
@@ -34,7 +35,7 @@ telemetry, and an overview dashboard.
 - **AI integration**: LangChain4j with strategy-pattern provider
   selection — Groq Llama 3.3 70B for generation, Cohere
   `embed-english-v3.0` for embeddings
-- **Frontend**: Vue 3 + Vite + TypeScript + Tailwind
+- **Frontend**: React 18 + Vite + TypeScript + Tailwind
 - **Deployment**: Single Docker container on Render, CI/CD via GitHub
   Actions
 
@@ -60,7 +61,7 @@ docker compose up -d postgres
 # Terminal 2 — Spring Boot backend on :8080
 ./gradlew bootRun
 
-# Terminal 3 — Vue dev server on :5173, proxies /api to :8080
+# Terminal 3 — Vite dev server on :5173, proxies /api to :8080
 cd web && npm install && npm run dev
 ```
 

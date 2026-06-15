@@ -20,19 +20,10 @@ CREATE TABLE users (
 );
 CREATE INDEX idx_users_tenant ON users(tenant_id);
 
--- Seed an admin user on the demo tenant so the first deploy is loginable.
--- Password is `eunomia-demo-2026`, BCrypt-hashed at cost 12.
--- (Anyone deploying for real overwrites this immediately.)
-INSERT INTO users (id, tenant_id, email, password_hash, display_name, role)
-VALUES (
-    '00000000-0000-0000-0000-000000000010',
-    '00000000-0000-0000-0000-000000000001',
-    'admin@demo-bank.example',
-    '$2a$12$3Z6f6jHKQ8m9oW8r3T6kveGfMUcuJiU9QY4M6KK1NjkBs7gA7T9Vu',
-    'Demo Admin',
-    'ADMIN'
-)
-ON CONFLICT DO NOTHING;
+-- No seed admin user. The first user for a tenant is created via
+-- POST /api/v1/auth/register so the password is set by the operator,
+-- never baked into the repository. Tenants come from V1; users are
+-- self-service from this point on.
 
 -- ── Regulations ─────────────────────────────────────────────────────
 -- An uploaded regulatory document. status drives the UI badge.
