@@ -7,6 +7,7 @@ import {
   Settings,
   LogOut,
   ChevronRight,
+  GitCompare,
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import Logo from './Logo'
@@ -26,6 +27,7 @@ interface NavItem {
 const PRIMARY_NAV: NavItem[] = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/regulations', label: 'Regulations', icon: FileText },
+  { to: '/regulations/diff', label: 'Compare regulations', icon: GitCompare },
   { to: '/policies', label: 'Internal policies', icon: BookOpen },
   { to: '/settings', label: 'Settings', icon: Settings, disabled: true },
 ]
