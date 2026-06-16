@@ -4,7 +4,6 @@ import {
   AlertCircle,
   ArrowRight,
   Equal,
-  FileX,
   GitCompare,
   Loader2,
   Minus,
