@@ -5,6 +5,7 @@ import RegisterPage from '@/pages/RegisterPage'
 import RegulationsPage from '@/pages/RegulationsPage'
 import UploadRegulationPage from '@/pages/UploadRegulationPage'
 import RegulationDetailPage from '@/pages/RegulationDetailPage'
+import RegulationDiffPage from '@/pages/RegulationDiffPage'
 import PoliciesPage from '@/pages/PoliciesPage'
 import UploadPolicyPage from '@/pages/UploadPolicyPage'
 import PolicyDetailPage from '@/pages/PolicyDetailPage'
@@ -47,6 +48,16 @@ export default function App() {
           <ProtectedRoute>
             <AppLayout>
               <UploadRegulationPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/regulations/diff"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <RegulationDiffPage />
             </AppLayout>
           </ProtectedRoute>
         }
