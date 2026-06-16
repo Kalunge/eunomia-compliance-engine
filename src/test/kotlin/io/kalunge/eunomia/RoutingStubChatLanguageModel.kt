@@ -8,20 +8,30 @@ import dev.langchain4j.model.output.Response
 
 /**
  * Smart test stub. Inspects the system message to decide which canned
- * response to return — so the same bean can serve both the Extractor
- * (which is told "you are a banking compliance analyst") and the
- * Mapper (which is told "you are a banking compliance reviewer") in
- * the same Spring context.
+ * response to return — so the same bean can serve every agent
+ * (Extractor, Mapper, Impact, Summarizer, Diff) in the same Spring
+ * context.
  *
- * Bypassing this routing would require either two ChatLanguageModel
- * beans (with @Qualifier wiring on the agents) or per-test stubs. The
- * routing approach keeps the production wiring unchanged.
+ * Bypassing this routing would require either per-agent ChatLanguageModel
+ * beans (with @Qualifier wiring) or per-test stubs. The routing approach
+ * keeps the production wiring unchanged.
+ *
+ * Routing keys (case-insensitive substring of the system prompt):
+ *  - "compliance writer"   → Summarizer
+ *  - "taxonomist"          → ImpactAnalyzer
+ *  - "regulatory analyst"  → Diff
+ *  - "compliance reviewer" → Mapper
+ *  - "compliance analyst"  → Extractor
+ *
+ * Note: "regulatory analyst" is checked before "compliance reviewer"
+ * to avoid false matches if a future prompt mentions both phrases.
  */
 class RoutingStubChatLanguageModel(
     private val extractorResponse: String,
     private val mapperResponse: String,
     private val impactResponse: String = """{ "impactedIndices": [] }""",
     private val summarizerResponse: String = "# Brief\n\nNo content (test stub).",
+    private val diffResponse: String = """{ "verdict": "added", "baselineIndex": null, "rationale": "test stub default — no real LLM judgement made" }""",
 ) : ChatLanguageModel {
 
     override fun generate(messages: MutableList<ChatMessage>): Response<AiMessage> {
@@ -31,6 +41,7 @@ class RoutingStubChatLanguageModel(
         val response = when {
             systemText.contains("compliance writer", ignoreCase = true) -> summarizerResponse
             systemText.contains("taxonomist", ignoreCase = true) -> impactResponse
+            systemText.contains("regulatory analyst", ignoreCase = true) -> diffResponse
             systemText.contains("compliance reviewer", ignoreCase = true) -> mapperResponse
             systemText.contains("compliance analyst", ignoreCase = true) -> extractorResponse
             else -> """{ "obligations": [] }"""
