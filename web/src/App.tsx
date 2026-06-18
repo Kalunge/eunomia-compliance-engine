@@ -10,6 +10,7 @@ import PoliciesPage from '@/pages/PoliciesPage'
 import UploadPolicyPage from '@/pages/UploadPolicyPage'
 import PolicyDetailPage from '@/pages/PolicyDetailPage'
 import DashboardPage from '@/pages/DashboardPage'
+import HelpDocsPage from '@/pages/HelpDocsPage'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import AppLayout from '@/components/AppLayout'
 
@@ -99,6 +100,17 @@ export default function App() {
           <ProtectedRoute>
             <AppLayout>
               <PolicyDetailPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/help"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <HelpDocsPage />
             </AppLayout>
           </ProtectedRoute>
         }
