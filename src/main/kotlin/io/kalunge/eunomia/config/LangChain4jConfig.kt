@@ -1,7 +1,9 @@
 package io.kalunge.eunomia.config
 
 import dev.langchain4j.model.chat.ChatLanguageModel
+import dev.langchain4j.model.chat.StreamingChatLanguageModel
 import dev.langchain4j.model.openai.OpenAiChatModel
+import dev.langchain4j.model.openai.OpenAiStreamingChatModel
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
@@ -55,6 +57,29 @@ class LangChain4jConfig {
             // 8-14s; 5 retries gives 1+2+4+8+16 = ~31s headroom which
             // clears the rolling window. Tune lower on a paid tier.
             .maxRetries(5)
+            .build()
+    }
+
+    /**
+     * Streaming variant of the chat model. Same Groq endpoint, but the
+     * SDK streams the response token-by-token via a callback handler
+     * instead of returning the full text at the end. Used by the in-app
+     * help assistant so users see tokens flow as they're generated.
+     */
+    @Bean
+    fun streamingChatModel(
+        @Value("\${eunomia.llm.groq.api-key:}") groqApiKey: String,
+        @Value("\${eunomia.llm.groq.model:llama-3.3-70b-versatile}") modelName: String,
+        @Value("\${eunomia.llm.groq.base-url:https://api.groq.com/openai/v1}") baseUrl: String,
+        @Value("\${eunomia.llm.groq.temperature:0.2}") temperature: Double,
+        @Value("\${eunomia.llm.groq.timeout-seconds:60}") timeoutSeconds: Long,
+    ): StreamingChatLanguageModel {
+        return OpenAiStreamingChatModel.builder()
+            .baseUrl(baseUrl)
+            .apiKey(groqApiKey.ifBlank { "missing-key" })
+            .modelName(modelName)
+            .temperature(temperature)
+            .timeout(Duration.ofSeconds(timeoutSeconds))
             .build()
     }
 }
