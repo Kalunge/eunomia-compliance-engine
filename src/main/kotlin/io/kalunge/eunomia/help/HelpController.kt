@@ -1,5 +1,6 @@
 package io.kalunge.eunomia.help
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.PostMapping
@@ -13,6 +14,7 @@ import java.util.concurrent.Executors
 @RequestMapping("/api/v1/help")
 class HelpController(
     private val helpService: HelpService,
+    private val objectMapper: ObjectMapper,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -38,7 +40,16 @@ class HelpController(
                     question = request.question,
                     onToken = { token ->
                         try {
-                            emitter.send(SseEmitter.event().data(token))
+                            // JSON-wrap the token so leading whitespace
+                            // survives the SSE protocol's `data:` line
+                            // parser (which strips one leading space per
+                            // the spec). LLM tokens are typically emitted
+                            // as " word" — without JSON wrapping the
+                            // spaces are eaten and words concatenate.
+                            emitter.send(
+                                SseEmitter.event()
+                                    .data(objectMapper.writeValueAsString(mapOf("t" to token))),
+                            )
                         } catch (e: Exception) {
                             log.debug("Failed to send token (client disconnect?): {}", e.message)
                         }
@@ -53,10 +64,11 @@ class HelpController(
                     },
                     onError = { error ->
                         try {
+                            val msg = error.message ?: error.javaClass.simpleName
                             emitter.send(
                                 SseEmitter.event()
                                     .name("error")
-                                    .data(error.message ?: error.javaClass.simpleName),
+                                    .data(objectMapper.writeValueAsString(mapOf("m" to msg))),
                             )
                         } catch (e: Exception) {
                             log.debug("Failed to send error event: {}", e.message)
