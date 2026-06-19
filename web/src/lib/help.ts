@@ -111,11 +111,27 @@ function dispatchEventBlock(block: string, handlers: AskHelpHandlers): void {
       handlers.onDone()
       return
     case 'error':
-      handlers.onError(data || 'Help assistant reported an unknown error.')
+      handlers.onError(parseField(data, 'm') ?? data ?? 'Help assistant reported an unknown error.')
       return
-    default:
-      // Default 'message' event = a token chunk.
-      handlers.onToken(data)
+    default: {
+      // Default 'message' event = a JSON-wrapped token chunk.
+      // The backend wraps as {"t":"<text>"} so leading whitespace
+      // survives SSE's data-line space-stripping.
+      const text = parseField(data, 't')
+      if (text !== null) handlers.onToken(text)
+      else handlers.onToken(data) // fallback for any non-JSON event
+    }
+  }
+}
+
+function parseField(data: string, key: string): string | null {
+  if (!data) return null
+  try {
+    const parsed = JSON.parse(data) as Record<string, unknown>
+    const v = parsed[key]
+    return typeof v === 'string' ? v : null
+  } catch {
+    return null
   }
 }
 
