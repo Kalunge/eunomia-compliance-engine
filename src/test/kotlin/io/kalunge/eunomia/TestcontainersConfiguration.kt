@@ -1,6 +1,11 @@
 package io.kalunge.eunomia
 
+import dev.langchain4j.data.message.AiMessage
+import dev.langchain4j.data.message.ChatMessage
+import dev.langchain4j.model.StreamingResponseHandler
 import dev.langchain4j.model.chat.ChatLanguageModel
+import dev.langchain4j.model.chat.StreamingChatLanguageModel
+import dev.langchain4j.model.output.Response
 import io.kalunge.eunomia.embedding.EmbeddingService
 import io.kalunge.eunomia.embedding.StubEmbeddingService
 import io.kalunge.eunomia.extraction.StubChatLanguageModel
@@ -50,4 +55,24 @@ class TestcontainersConfiguration {
      */
     @Bean
     fun embeddingService(): EmbeddingService = StubEmbeddingService()
+
+    /**
+     * Replaces the production StreamingChatLanguageModel for any test
+     * that loads the Spring context. Production LangChain4jConfig is
+     * @Profile("!test") so it's silent here; this bean satisfies any
+     * downstream wiring (e.g. HelpService) without making a real Groq
+     * call. The stub emits one chunk then completes.
+     */
+    @Bean
+    fun streamingChatLanguageModel(): StreamingChatLanguageModel =
+        object : StreamingChatLanguageModel {
+            override fun generate(
+                messages: MutableList<ChatMessage>,
+                handler: StreamingResponseHandler<AiMessage>,
+            ) {
+                val text = "Eunomia help (test stub)."
+                handler.onNext(text)
+                handler.onComplete(Response.from(AiMessage.from(text)))
+            }
+        }
 }

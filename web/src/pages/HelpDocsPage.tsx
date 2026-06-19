@@ -1,7 +1,8 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   Activity,
   BookOpen,
+  Bot,
   ChevronDown,
   ChevronUp,
   Code,
@@ -9,16 +10,21 @@ import {
   GitCompare,
   LayoutDashboard,
   ListChecks,
+  Loader2,
   PlayCircle,
   Search,
+  Send,
   Shield,
+  Sparkles,
   Target,
   Upload,
+  User,
   Users,
   Wrench,
   type LucideIcon,
 } from 'lucide-react'
 import { clsx } from 'clsx'
+import { askHelpStream } from '@/lib/help'
 
 // ───── Types ─────────────────────────────────────────────────────
 
@@ -696,6 +702,8 @@ export default function HelpDocsPage() {
     <div className="mx-auto max-w-7xl p-6 md:p-10 space-y-6">
       <Header />
 
+      <AskAISection />
+
       <FilterInput value={filter} onChange={setFilter} />
 
       <TopicsGrid topics={visible} onFocus={focusTopic} />
@@ -711,6 +719,211 @@ export default function HelpDocsPage() {
           No topics match your search. Try a different term.
         </div>
       )}
+    </div>
+  )
+}
+
+// ───── Ask AI ────────────────────────────────────────────────────
+
+interface Turn {
+  id: number
+  question: string
+  answer: string
+  status: 'thinking' | 'streaming' | 'done' | 'error'
+  errorMessage?: string
+}
+
+const EXAMPLE_QUESTIONS = [
+  'What is Eunomia?',
+  'Which industries is this for?',
+  'What is the tech stack?',
+  'How does mapping work?',
+  'What is a regulation obligation?',
+  'How is the platform multi-tenant?',
+  'How does the regulation diff work?',
+  'How do I troubleshoot a stuck saga?',
+]
+
+function AskAISection() {
+  const [draft, setDraft] = useState('')
+  const [turns, setTurns] = useState<Turn[]>([])
+  const abortRef = useRef<(() => void) | null>(null)
+  const turnsBottomRef = useRef<HTMLDivElement>(null)
+
+  // Cancel any in-flight stream when the component unmounts.
+  useEffect(() => () => abortRef.current?.(), [])
+
+  // Auto-scroll to the latest turn as it streams in.
+  useEffect(() => {
+    turnsBottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+  }, [turns])
+
+  const isBusy = turns.some((t) => t.status === 'thinking' || t.status === 'streaming')
+
+  const ask = (question: string) => {
+    const q = question.trim()
+    if (!q || isBusy) return
+
+    setDraft('')
+    const turnId = Date.now()
+    setTurns((prev) => [
+      ...prev,
+      { id: turnId, question: q, answer: '', status: 'thinking' },
+    ])
+
+    abortRef.current?.()
+    abortRef.current = askHelpStream(q, {
+      onToken: (chunk) => {
+        setTurns((prev) =>
+          prev.map((t) =>
+            t.id === turnId ? { ...t, answer: t.answer + chunk, status: 'streaming' } : t,
+          ),
+        )
+      },
+      onDone: () => {
+        setTurns((prev) =>
+          prev.map((t) => (t.id === turnId ? { ...t, status: 'done' } : t)),
+        )
+      },
+      onError: (msg) => {
+        setTurns((prev) =>
+          prev.map((t) =>
+            t.id === turnId ? { ...t, status: 'error', errorMessage: msg } : t,
+          ),
+        )
+      },
+    })
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    ask(draft)
+  }
+
+  const clear = () => {
+    abortRef.current?.()
+    abortRef.current = null
+    setTurns([])
+  }
+
+  return (
+    <section className="card overflow-hidden">
+      <header className="flex items-start gap-3 border-b border-slate-100 px-5 py-4">
+        <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+          <Sparkles className="h-4 w-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h2 className="font-semibold text-slate-900">Ask Eunomia AI</h2>
+          <p className="text-xs text-slate-500">
+            Ask any question about Eunomia — what it does, how it works, the tech behind it, or
+            how to use a specific feature. Answers stream in as they're generated.
+          </p>
+        </div>
+        {turns.length > 0 && (
+          <button
+            type="button"
+            onClick={clear}
+            className="text-xs font-medium text-slate-500 hover:text-slate-700"
+          >
+            Clear
+          </button>
+        )}
+      </header>
+
+      <div className="space-y-4 px-5 py-4">
+        {turns.length === 0 && <ExampleQuestionChips onPick={ask} />}
+
+        {turns.map((t) => (
+          <TurnView key={t.id} turn={t} />
+        ))}
+        <div ref={turnsBottomRef} />
+
+        <form onSubmit={handleSubmit} className="flex items-center gap-2 pt-1">
+          <input
+            type="text"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="Ask anything about Eunomia…"
+            disabled={isBusy}
+            className="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:cursor-not-allowed disabled:bg-slate-50"
+          />
+          <button
+            type="submit"
+            disabled={!draft.trim() || isBusy}
+            className="btn-primary disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isBusy ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
+            {isBusy ? 'Thinking…' : 'Ask'}
+          </button>
+        </form>
+      </div>
+    </section>
+  )
+}
+
+function ExampleQuestionChips({ onPick }: { onPick: (q: string) => void }) {
+  return (
+    <div className="space-y-2">
+      <p className="text-xs font-semibold uppercase tracking-wider text-slate-600">
+        Example questions
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {EXAMPLE_QUESTIONS.map((q) => (
+          <button
+            key={q}
+            type="button"
+            onClick={() => onPick(q)}
+            className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
+          >
+            {q}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function TurnView({ turn }: { turn: Turn }) {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-start gap-2.5">
+        <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-700">
+          <User className="h-3.5 w-3.5" />
+        </div>
+        <p className="pt-0.5 text-sm font-medium text-slate-900">{turn.question}</p>
+      </div>
+
+      <div className="flex items-start gap-2.5">
+        <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-700">
+          <Bot className="h-3.5 w-3.5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          {turn.status === 'thinking' && (
+            <div className="inline-flex items-center gap-2 pt-0.5 text-sm text-slate-500">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <span>Thinking…</span>
+            </div>
+          )}
+          {(turn.status === 'streaming' || turn.status === 'done') && (
+            <p className="whitespace-pre-wrap pt-0.5 text-sm leading-relaxed text-slate-800">
+              {turn.answer}
+              {turn.status === 'streaming' && (
+                <span className="ml-0.5 inline-block h-3.5 w-0.5 animate-pulse bg-brand-500 align-middle" />
+              )}
+            </p>
+          )}
+          {turn.status === 'error' && (
+            <p className="pt-0.5 text-sm text-rose-700">
+              <strong>Error: </strong>
+              {turn.errorMessage ?? 'Something went wrong.'}
+            </p>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
