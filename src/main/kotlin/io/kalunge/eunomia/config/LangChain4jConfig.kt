@@ -15,10 +15,11 @@ import java.time.Duration
  * LangChain4j wiring.
  *
  * The Extractor (and later Mapper/Impact/Summarizer) agents depend on
- * a ChatLanguageModel. In production that's Groq's Llama 3.3 70B via
- * the OpenAI-compatible endpoint. Tests provide their own stub bean
- * under the @Profile("test") guard so we never call the real Groq API
- * from CI.
+ * a ChatLanguageModel. In production that's GPT OSS 120B served by
+ * Groq via the OpenAI-compatible endpoint — migrated from
+ * llama-3.3-70b-versatile after Groq deprecated it in mid-2026. Tests
+ * provide their own stub bean under the @Profile("test") guard so we
+ * never call the real Groq API from CI.
  *
  * Why OpenAiChatModel for Groq:
  *   Groq exposes an OpenAI-compatible REST surface, so we can reuse
@@ -35,7 +36,7 @@ class LangChain4jConfig {
     @Bean
     fun chatModel(
         @Value("\${eunomia.llm.groq.api-key:}") groqApiKey: String,
-        @Value("\${eunomia.llm.groq.model:llama-3.3-70b-versatile}") modelName: String,
+        @Value("\${eunomia.llm.groq.model:openai/gpt-oss-120b}") modelName: String,
         @Value("\${eunomia.llm.groq.base-url:https://api.groq.com/openai/v1}") baseUrl: String,
         @Value("\${eunomia.llm.groq.temperature:0.1}") temperature: Double,
         @Value("\${eunomia.llm.groq.timeout-seconds:60}") timeoutSeconds: Long,
@@ -69,7 +70,7 @@ class LangChain4jConfig {
     @Bean
     fun streamingChatModel(
         @Value("\${eunomia.llm.groq.api-key:}") groqApiKey: String,
-        @Value("\${eunomia.llm.groq.model:llama-3.3-70b-versatile}") modelName: String,
+        @Value("\${eunomia.llm.groq.model:openai/gpt-oss-120b}") modelName: String,
         @Value("\${eunomia.llm.groq.base-url:https://api.groq.com/openai/v1}") baseUrl: String,
         @Value("\${eunomia.llm.groq.temperature:0.2}") temperature: Double,
         @Value("\${eunomia.llm.groq.timeout-seconds:60}") timeoutSeconds: Long,
