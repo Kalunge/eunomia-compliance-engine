@@ -1,8 +1,5 @@
 # Eunomia — Design and Testing
 
-The design and testing write-up for this repo. Written the way I'd
-explain it to a new engineer joining the team.
-
 ## What Eunomia is
 
 When a regulator publishes a circular, a bank's compliance team has
@@ -47,15 +44,17 @@ Live: <https://eunomia-web.vercel.app>.
             on AWS RDS
 ```
 
-One Spring Boot process behind one EC2, one Postgres. No broker, no
-Redis, no Temporal. Anything I'd add at this scale would cost more
-in operational weight than it'd buy me.
+The current deployment uses one Spring Boot process on EC2 and one
+Postgres database on RDS. This keeps the pilot architecture small
+enough to operate on low-cost infrastructure while retaining a clear
+path to separate workers and additional services if usage grows.
 
 ## Tech choices that mattered
 
 **Kotlin on Spring Boot 3.5**, because Kotlin gives me null-safety
 and data classes without giving up the Spring ecosystem. Java 21
-runtime; one fat JAR on a 1 GB t3.micro is the only realistic shape.
+runtime; packaging the backend as one executable JAR keeps deployment
+and rollback straightforward on the current 1 GB EC2 instance.
 
 **Postgres 16 with pgvector** so relational data and vector search
 live in the same engine. No separate Pinecone or Qdrant to operate,
@@ -142,14 +141,14 @@ Two changes came out of that. First, a "Try again" button on the
 brief card that succeeds on the second attempt because the token
 bucket has rolled. Second, I started treating the LLM layer as
 something to spread across vendors deliberately. The split now:
-Cohere for embeddings, Groq for the per-obligation Mapper, AWS
-Bedrock wired up for the Summarizer (blocked behind a new-account
-verification request — once it clears, the Summarizer moves over
-and the failure mode goes away because its budget is separate from
-the Mapper's).
+Cohere for embeddings and Groq for generation. Moving the
+Summarizer to a second generation provider, such as AWS Bedrock,
+is a future option because it would separate its rate-limit budget
+from the per-obligation Mapper calls.
 
-The takeaway: free-tier capacity isn't a thing you hit then deal
-with — it's a thing you design around from the start.
+This incident led to explicit retry behavior and made provider
+capacity a deployment consideration rather than an unhandled runtime
+failure.
 
 ## Deployment
 
@@ -174,6 +173,25 @@ Security posture: port 22 closed on the EC2 (SSM Run Command
 doesn't need it), no AWS credentials in GitHub (OIDC federation),
 JWT signing key in an EnvironmentFile that systemd loads.
 
+### Recommended deployment options and cost implications
+
+The appropriate deployment depends on whether Eunomia is being used
+as a demonstration, a low-volume pilot, or a production compliance
+system handling regulated data.
+
+| Option | Relative cost | Advantages | Trade-offs and recommendation |
+|---|---:|---|---|
+| Current Vercel + single-AZ AWS deployment | Low: $0 while eligible free tiers apply; approximately $22–25/month after expiry | Managed Postgres, simple deployment, automated backups, and enough capacity for a pilot | Recommended for the capstone demonstration and a low-volume pilot. A single EC2 instance and single-AZ database are not sufficient for a high-availability production service. |
+| Hardened AWS cloud deployment | Medium: approximately $60+/month before significant LLM usage or data transfer | An Application Load Balancer, Multi-AZ RDS, stronger monitoring, and redundant application instances improve availability | Recommended cloud path for production. It costs more than the pilot architecture but reduces single points of failure and recovery time. |
+| Managed platform such as Render or Railway | Low to medium, depending on database and compute tiers | Less infrastructure administration and faster setup | Suitable for prototypes and small deployments. It offers less control over networking, database extensions, deployment rollback, and data location than the AWS design. |
+| Private cloud or on-premises | High initial and operational cost | Maximum control over data residency, network access, retention, and model hosting | Appropriate where regulation or bank policy prevents external cloud processing. It requires infrastructure capacity, patching, backups, monitoring, and operations staff. Self-hosted models may also require GPU hardware. |
+
+For the current workload, the existing cloud deployment provides the
+best balance of cost, maintainability, and demonstrability. A bank
+moving Eunomia into production should choose either the hardened AWS
+option or a private-cloud/on-premises deployment after reviewing its
+data-residency, availability, and third-party AI requirements.
+
 ## Testing
 
 The principle: test the real implementations, stub only the
@@ -181,7 +199,7 @@ external dependencies that cost money or are non-deterministic. I
 learnt that the hard way on an earlier project that used H2 in
 tests and broke on Postgres in production.
 
-The backend currently has 85 `@Test` methods. Parser and agent tests
+The Gradle suite currently executes 82 tests. Parser and agent tests
 cover deterministic transformation and strict-JSON handling.
 Workflow tests exercise complete stage transitions, while API tests
 cover authentication and HTTP success and failure contracts,
@@ -199,22 +217,23 @@ production. Representative suites include
 ./gradlew test
 ```
 
-The LLM stub is the bit I'm most proud of:
-`RoutingStubChatLanguageModel` inspects each request's system
-prompt and routes to the right canned response —
+`RoutingStubChatLanguageModel` makes multi-agent integration tests
+deterministic without changing production wiring. It inspects each
+request's system prompt and routes to the appropriate canned response:
 `compliance analyst` → Extractor, `compliance reviewer` → Mapper,
 `taxonomist` → Impact, `compliance writer` → Summarizer,
 `regulatory analyst` → Diff. One bean serves five agents in the
-same Spring context. Without this I'd have ended up with five
-qualifier-tagged beans and a brittle setup.
+same Spring context, avoiding separate qualifier-tagged model beans
+for each agent and keeping the test wiring consistent with production.
 
-I don't claim that deterministic tests establish LLM output quality;
-that would require a curated golden dataset, evaluation criteria,
-and repeated model runs. That work is outside this capstone's scope.
-The suite does verify the boundary I control: prompts are assembled
-correctly, valid responses are parsed and persisted, malformed
-responses produce the intended failure state, and retries do not
-discard earlier successful work.
+LLM output quality is not currently evaluated against an
+expert-labelled dataset. A future improvement would use
+representative regulations, expected obligations and mappings,
+measurable accuracy criteria, and repeated regression runs. The
+current automated suite verifies the deterministic boundaries:
+prompts are assembled correctly, valid responses are parsed and
+persisted, malformed responses produce the intended failure state,
+and retries do not discard earlier successful work.
 
 ## Failure modes
 
@@ -229,20 +248,28 @@ discard earlier successful work.
 | Cross-tenant ID slips through | Repository returns null → 404, no information leakage |
 | Empty regulation | Empty brief with "no obligations found" message, not a crash |
 
-## Things I left out on purpose
+## Production scaling recommendations
 
-- A message broker. Five sequential stages don't need RabbitMQ.
-- A separate worker process. `@Async` in the API process is fine
-  for this scale.
-- Distributed tracing. One process, one host. Structured logs and
-  Spring Actuator cover the load.
-- OCR for image-only PDFs. Most regulators publish text.
-- Password-reset and invitations. Scope decisions for the
-  capstone; production needs both.
+The current architecture is appropriate for the demonstrated load,
+but production adoption would justify additional capabilities:
 
-## Things I added beyond the brief
+- Introduce a durable queue and separate worker processes when
+  concurrent document volume can no longer be handled reliably by
+  the four in-process `@Async` workflow stages. This would preserve
+  queued work across application restarts and allow workers to scale
+  independently.
+- Add distributed tracing if the backend is separated into multiple
+  services. Structured logs and Spring Actuator are sufficient while
+  requests remain inside one application process.
+- Add OCR when image-only or scanned regulatory documents become a
+  supported input. The current Apache Tika parser handles documents
+  containing extractable text.
+- Add password reset, invitations, stronger account administration,
+  and enterprise identity integration before production adoption.
 
-- Regulation diff at the obligation level — the headline feature.
+## Features delivered above and beyond the minimum Capstone requirements
+
+- Regulation diff at the obligation level.
 - In-app streaming AI help assistant on the Help & Docs page.
 - AWS-native CI/CD with OIDC federation and auto-rollback.
 - Live SSE workflow events with sequence numbers and reconnection.
