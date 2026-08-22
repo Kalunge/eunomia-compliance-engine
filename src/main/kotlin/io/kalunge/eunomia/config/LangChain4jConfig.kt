@@ -44,7 +44,7 @@ class LangChain4jConfig {
         if (groqApiKey.isBlank()) {
             log.warn(
                 "GROQ_API_KEY is not set. Extractor calls will fail at runtime. " +
-                    "Set the env var in .env locally and in Render's Environment tab in production.",
+                    "Set it in .env locally and in the EC2 service EnvironmentFile in production.",
             )
         }
         return OpenAiChatModel.builder()

@@ -50,7 +50,7 @@ class CohereConfig {
         if (apiKey.isBlank()) {
             log.warn(
                 "COHERE_API_KEY is not set. Policy embedding calls will fail at runtime. " +
-                    "Set the env var in .env locally and in Render's Environment tab in production.",
+                    "Set it in .env locally and in the EC2 service EnvironmentFile in production.",
             )
         }
         return CohereEmbeddingModel.builder()
