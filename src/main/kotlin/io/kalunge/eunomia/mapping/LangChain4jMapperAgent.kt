@@ -9,8 +9,8 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
 /**
- * Production Mapper agent. Calls a ChatLanguageModel (Groq Llama 3.3
- * 70B via OpenAI adapter in production, stubbed in tests) with the
+ * Production Mapper agent. Calls a ChatLanguageModel (Groq GPT OSS
+ * 120B via OpenAI adapter in production, stubbed in tests) with the
  * system prompt + user prompt described in
  * docs/08-mapper-agent-deep-dive.md.
  *

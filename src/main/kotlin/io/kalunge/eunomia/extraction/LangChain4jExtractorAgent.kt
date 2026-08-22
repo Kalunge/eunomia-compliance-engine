@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service
 /**
  * LangChain4j-backed implementation. Sends the parsed document text
  * through whichever ChatLanguageModel is wired into the context — in
- * production that's Groq's Llama 3.3 70B (configured in LangChain4jConfig).
+ * production that's Groq's GPT OSS 120B (configured in LangChain4jConfig).
  *
  * Design notes:
  *
