@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service
 
 /**
  * Streams an answer to a user question about the Eunomia platform.
- * Routes through the same Groq Llama 3.3 70B model the agents use,
+ * Routes through the same Groq GPT OSS 120B model the agents use,
  * but in streaming mode so the controller can flush tokens to the
  * browser as they arrive.
  *
@@ -106,7 +106,7 @@ class HelpService(
               AWS EC2 (t3.micro) in us-east-1
             - Database: Postgres 16 with the pgvector extension, on AWS RDS
             - Document parsing: Apache Tika (handles PDF, DOCX, plain text)
-            - LLM (judgment + composition): Groq's Llama 3.3 70B via an
+            - LLM (judgment + composition): Groq's GPT OSS 120B via an
               OpenAI-compatible adapter
             - Embeddings: Cohere embed-english-v3.0 (1024-dimensional,
               L2-normalised, with separate search_document and search_query

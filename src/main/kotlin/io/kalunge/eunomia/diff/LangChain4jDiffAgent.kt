@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component
 
 /**
  * Production Diff agent. Calls the same ChatLanguageModel bean as the
- * Extractor and Mapper (Groq Llama 3.3 70B via OpenAI adapter in
+ * Extractor and Mapper (Groq GPT OSS 120B via OpenAI adapter in
  * production, RoutingStubChatLanguageModel in tests) with the
  * regulatory-analyst system prompt described in
  * docs/12-regulation-diff.md.
