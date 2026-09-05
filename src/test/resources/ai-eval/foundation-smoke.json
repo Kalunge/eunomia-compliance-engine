@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "suiteId": "foundation-smoke",
+  "evaluator": "foundation",
+  "description": "Verifies evaluation dataset loading and report generation without calling an external model.",
+  "cases": [
+    {
+      "id": "exact-object-match",
+      "input": {
+        "value": "mapped"
+      },
+      "expected": {
+        "value": "mapped"
+      },
+      "tags": [
+        "smoke"
+      ]
+    },
+    {
+      "id": "exact-array-match",
+      "input": {
+        "values": [
+          "unchanged",
+          "modified",
+          "added"
+        ]
+      },
+      "expected": {
+        "values": [
+          "unchanged",
+          "modified",
+          "added"
+        ]
+      },
+      "tags": [
+        "smoke"
+      ]
+    }
+  ]
+}

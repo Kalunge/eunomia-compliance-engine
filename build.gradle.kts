@@ -128,11 +128,38 @@ allOpen {
 	annotation("jakarta.persistence.Embeddable")
 }
 
-tasks.withType<Test> {
+tasks.withType<Test>().configureEach {
 	useJUnitPlatform()
 	// docker-java negotiates API v1.32 by default, which OrbStack (Docker 25+)
 	// rejects. Force a modern version so Testcontainers works on local machines
 	// with newer Docker engines.
 	systemProperty("api.version", "1.43")
 	environment("DOCKER_API_VERSION", "1.43")
+}
+
+tasks.named<Test>("test") {
+	useJUnitPlatform {
+		excludeTags("ai-eval")
+	}
+}
+
+val aiEvalReportDir = layout.buildDirectory.dir("reports/ai-eval")
+
+tasks.register<Test>("aiEval") {
+	group = "verification"
+	description = "Runs AI evaluation cases separately from the deterministic test suite."
+
+	testClassesDirs = sourceSets["test"].output.classesDirs
+	classpath = sourceSets["test"].runtimeClasspath
+
+	useJUnitPlatform {
+		includeTags("ai-eval")
+	}
+
+	systemProperty("aiEval.reportDir", aiEvalReportDir.get().asFile.absolutePath)
+	outputs.dir(aiEvalReportDir)
+
+	doFirst {
+		delete(aiEvalReportDir)
+	}
 }
