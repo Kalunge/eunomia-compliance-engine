@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "suiteId": "end-to-end-v1",
+  "evaluator": "end-to-end",
+  "description": "Exercises one labelled compliance case through policy indexing, extraction, retrieval, mapping, impact tagging, persistence, workflow events, and brief generation.",
+  "cases": [
+    {
+      "id": "agent-banking-golden-path",
+      "input": {
+        "policyTitle": "Agent Operations Manual",
+        "policyFilename": "agent-operations-manual.txt",
+        "policyText": "Agent Operations Manual\n\n4.2 Enhanced identity controls\nAgents shall inspect a valid identity document and capture a biometric fingerprint for transactions at or above KES 50,000.\n\n6.1 Suspicious activity reporting\nThe Money Laundering Reporting Officer shall file suspicious agent transaction reports with the Financial Reporting Centre within 24 hours.\n\n8.1 Agent induction\nEvery newly appointed agent completes induction training before activation.",
+        "regulationTitle": "CBK Agent Banking Circular 2026",
+        "regulationFilename": "cbk-agent-banking-circular-2026.txt",
+        "regulationText": "CBK Agent Banking Circular 2026\n\nSection 3.1 Enhanced customer verification\nBanks shall ensure agents inspect a valid identity document and capture a biometric fingerprint for transactions above KES 70,000.\n\nSection 3.2 Suspicious transaction reporting\nBanks shall report suspicious agent transactions to the Financial Reporting Centre within 24 hours.\n\nSection 3.3 Recurring training\nBanks shall ensure every active agent completes KYC and anti-money-laundering refresher training at least once every twelve months.",
+        "products": [
+          {
+            "name": "Agent Banking",
+            "description": "Cash-in, cash-out, account servicing, and customer verification performed through contracted banking agents."
+          },
+          {
+            "name": "AML Operations",
+            "description": "Transaction monitoring, investigation, and regulatory reporting of suspicious activity."
+          },
+          {
+            "name": "Learning and Development",
+            "description": "Mandatory staff and agent training programmes and completion records."
+          },
+          {
+            "name": "Mobile Banking",
+            "description": "Customer self-service through mobile applications and USSD."
+          },
+          {
+            "name": "Retail Deposits",
+            "description": "Branch-based current and savings account products."
+          }
+        ]
+      },
+      "expected": {
+        "obligations": [
+          {
+            "id": "enhanced-identity",
+            "summary": "Apply enhanced identity checks to agent transactions above KES 70,000.",
+            "sourceExcerpt": "Banks shall ensure agents inspect a valid identity document and capture a biometric fingerprint for transactions above KES 70,000.",
+            "anchorTerms": ["identity document", "70,000"],
+            "expectedGapStatus": "MAPPED",
+            "expectedPolicyTerms": ["identity document", "biometric fingerprint"],
+            "requiredProducts": ["Agent Banking"],
+            "allowedProducts": ["Agent Banking", "AML Operations"]
+          },
+          {
+            "id": "suspicious-reporting",
+            "summary": "Report suspicious agent transactions to the FRC within 24 hours.",
+            "sourceExcerpt": "Banks shall report suspicious agent transactions to the Financial Reporting Centre within 24 hours.",
+            "anchorTerms": ["suspicious agent transactions", "24 hours"],
+            "expectedGapStatus": "MAPPED",
+            "expectedPolicyTerms": ["suspicious agent transaction", "24 hours"],
+            "requiredProducts": ["Agent Banking", "AML Operations"],
+            "allowedProducts": ["Agent Banking", "AML Operations"]
+          },
+          {
+            "id": "annual-training",
+            "summary": "Require annual KYC and AML refresher training for active agents.",
+            "sourceExcerpt": "Banks shall ensure every active agent completes KYC and anti-money-laundering refresher training at least once every twelve months.",
+            "anchorTerms": ["refresher training", "twelve months"],
+            "expectedGapStatus": "GAP",
+            "requiredProducts": ["Agent Banking"],
+            "allowedProducts": ["Agent Banking", "Learning and Development"]
+          }
+        ],
+        "forbiddenBriefTerms": ["KES 5 million", "licence revocation", "30-day deadline"]
+      },
+      "tags": ["golden-path", "agent-banking", "mixed-coverage"]
+    }
+  ]
+}
