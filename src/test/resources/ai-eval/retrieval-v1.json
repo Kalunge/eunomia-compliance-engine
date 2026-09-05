@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "suiteId": "retrieval-v1",
+  "evaluator": "retrieval",
+  "description": "Measures Cohere query/document embeddings and tenant-scoped pgvector retrieval independently from the Mapper LLM.",
+  "cases": [
+    {
+      "id": "agent-enhanced-identification",
+      "input": {
+        "query": "Verify identity, biometric fingerprint, and a second factor for high-value agent transactions."
+      },
+      "expected": {
+        "relevantChunkIds": ["agent-identity"]
+      },
+      "tags": ["agent-banking", "identity"]
+    },
+    {
+      "id": "suspicious-reporting-deadline",
+      "input": {
+        "query": "Report suspicious activity from an agent outlet to the FRC within 24 hours."
+      },
+      "expected": {
+        "relevantChunkIds": ["agent-suspicious-reporting"]
+      },
+      "tags": ["aml", "reporting"]
+    },
+    {
+      "id": "agent-record-retention",
+      "input": {
+        "query": "Keep agent banking identification and transaction records for seven years."
+      },
+      "expected": {
+        "relevantChunkIds": ["agent-record-retention"]
+      },
+      "tags": ["retention"]
+    },
+    {
+      "id": "annual-agent-training",
+      "input": {
+        "query": "Require agents to receive annual KYC and AML refresher training."
+      },
+      "expected": {
+        "relevantChunkIds": ["agent-training"]
+      },
+      "tags": ["training"]
+    },
+    {
+      "id": "vendor-onboarding-controls",
+      "input": {
+        "query": "Perform due diligence before appointing a critical vendor and ensure the contract provides audit rights."
+      },
+      "expected": {
+        "relevantChunkIds": [
+          "vendor-due-diligence",
+          "vendor-audit-rights"
+        ]
+      },
+      "tags": ["vendor", "multiple-relevant"]
+    },
+    {
+      "id": "cyber-incident-deadline",
+      "input": {
+        "query": "Notify the regulator within four hours when a cyber incident disrupts a critical service."
+      },
+      "expected": {
+        "relevantChunkIds": ["cyber-incident-reporting"]
+      },
+      "tags": ["cyber", "reporting"]
+    },
+    {
+      "id": "minimum-liquidity-ratio",
+      "input": {
+        "query": "Maintain the liquidity coverage ratio at no less than 110 percent."
+      },
+      "expected": {
+        "relevantChunkIds": ["liquidity-lcr"]
+      },
+      "tags": ["liquidity", "threshold"]
+    },
+    {
+      "id": "quarterly-liquidity-stress-test",
+      "input": {
+        "query": "Run liquidity stress scenarios every quarter and report them to the board risk committee."
+      },
+      "expected": {
+        "relevantChunkIds": ["liquidity-stress-testing"]
+      },
+      "tags": ["liquidity", "stress-testing"]
+    }
+  ]
+}
