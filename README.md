@@ -125,7 +125,8 @@ URLs once running:
 - Swagger UI: `http://localhost:8080/docs`
 - Health: `http://localhost:8080/actuator/health`
 
-**Run the tests** (Testcontainers boots a real Postgres + pgvector):
+**Run the deterministic test suite** (98 tests; Testcontainers boots a
+real Postgres + pgvector):
 
 ```bash
 ./gradlew test
@@ -139,13 +140,31 @@ GROQ_API_KEY=your-key COHERE_API_KEY=your-key ./gradlew aiEval
 
 The command writes Markdown and JSON scorecards under
 `build/reports/ai-eval/`. Live suites skip when their required provider
-key is absent; the no-cost evaluation-foundation checks still run.
+key is absent; the no-cost evaluation-foundation checks still run. The
+versioned suites cover:
+
+| Suite | What it measures |
+|---|---|
+| Extractor | obligation precision, recall, F1, parsing, and source-excerpt faithfulness |
+| Mapper | classification quality, confidence calibration, and judgment completeness |
+| Diff | verdicts, baseline pairing, removals, and rationale coverage |
+| Retrieval | Cohere/pgvector Recall@1, Recall@3, MRR, and tenant isolation |
+| Brief | structure, obligation/status coverage, grounding, actions, and hallucination guards |
+| End-to-end | policy indexing through extraction, retrieval, mapping, impact tagging, persistence, events, and brief generation |
+
+A successful cloud golden-path baseline completed the regulation
+pipeline in about 17 seconds using eight Groq calls (7,063 tokens) and
+four Cohere requests. These are regression baselines from a small,
+curated dataset, not a claim of production-wide accuracy.
 
 For a cloud run, open **Actions → AI Evaluation → Run workflow**. The
 workflow requires repository secrets `GROQ_API_KEY` and `COHERE_API_KEY`,
 publishes the Markdown scorecards in the run summary, and retains the
 complete reports as an artifact for 30 days. It is manual and does not
-deploy the application.
+deploy the application or block normal CI. On Groq's free tier, increase
+the call delay to avoid token-per-minute limits. A successful workflow
+means the harness completed; the generated scorecards remain the source
+of truth for individual quality thresholds.
 
 ## Configuration
 
@@ -188,6 +207,10 @@ src/main/resources/
   ├── application.yml
   └── db/migration/   # Flyway migrations
 
+src/test/
+  ├── kotlin/io/kalunge/eunomia/evaluation/  # Metrics + live evaluators
+  └── resources/ai-eval/                     # Versioned labelled datasets
+
 web/src/
   ├── pages/         # Each route's top-level component
   ├── components/    # AppLayout, ProtectedRoute, etc.
@@ -223,7 +246,8 @@ deploy script, are in
 
 - **[`design_and_testing.md`](./design_and_testing.md)** — design
   decisions, patterns and rationale, multi-vendor LLM split,
-  deployment topology, CI/CD, testing layers, failure modes
+  deployment topology, CI/CD, deterministic tests, AI evaluation,
+  and failure modes
 - **In-app Help & Docs** — open the deployed app, sign in, click
   **Help & Docs** in the sidebar for 13 topic guides plus an AI
   assistant that answers free-form questions about the platform

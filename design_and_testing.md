@@ -150,6 +150,14 @@ This incident led to explicit retry behavior and made provider
 capacity a deployment consideration rather than an unhandled runtime
 failure.
 
+The end-to-end evaluation later gave this concern a measurable shape.
+One successful three-obligation golden path used eight Groq calls and
+7,063 tokens, plus one Cohere document-embedding request and three
+query requests. Repeated evaluation runs also reached Groq's free-tier
+token limits. The manual evaluation workflow therefore supports a
+configurable delay between calls, and the results are treated as
+capacity evidence as well as quality evidence.
+
 ## Deployment
 
 Frontend: Vercel static hosting with rewrites that proxy to the EC2.
@@ -162,6 +170,11 @@ against a Testcontainers Postgres. Pushes to `main` also build the
 boot JAR, assume an IAM role via OIDC federation (no long-lived AWS
 keys in GitHub), upload to S3, then trigger an SSM Run Command on
 the EC2 with a deploy script.
+
+Live model evaluation is deliberately separate in
+`.github/workflows/ai-evaluation.yml`. It runs only when manually
+dispatched, publishes scorecards and artifacts, and neither deploys
+the application nor blocks the deterministic CI pipeline.
 
 The deploy script swaps the JAR atomically, restarts the systemd
 unit, and polls `/actuator/health` for up to 120 seconds. On
@@ -199,7 +212,7 @@ external dependencies that cost money or are non-deterministic. I
 learnt that the hard way on an earlier project that used H2 in
 tests and broke on Postgres in production.
 
-The Gradle suite currently executes 82 tests. Parser and agent tests
+The Gradle suite currently executes 98 tests. Parser and agent tests
 cover deterministic transformation and strict-JSON handling.
 Workflow tests exercise complete stage transitions, while API tests
 cover authentication and HTTP success and failure contracts,
@@ -226,14 +239,41 @@ request's system prompt and routes to the appropriate canned response:
 same Spring context, avoiding separate qualifier-tagged model beans
 for each agent and keeping the test wiring consistent with production.
 
-LLM output quality is not currently evaluated against an
-expert-labelled dataset. A future improvement would use
-representative regulations, expected obligations and mappings,
-measurable accuracy criteria, and repeated regression runs. The
-current automated suite verifies the deterministic boundaries:
-prompts are assembled correctly, valid responses are parsed and
-persisted, malformed responses produce the intended failure state,
-and retries do not discard earlier successful work.
+### AI quality evaluation
+
+Deterministic tests prove that the application is wired correctly, but
+they cannot show whether a live model extracts the right obligation or
+selects the right policy clause. Eunomia therefore has a separate
+`aiEval` Gradle task backed by versioned labelled datasets. It uses the
+production agents and providers, writes Markdown and JSON scorecards,
+and remains outside normal CI so non-deterministic calls and provider
+cost do not block deployment.
+
+| Suite | Dataset and measurements | Successful baseline |
+|---|---|---|
+| Extractor | Five documents; precision, recall, F1, parse success, and verbatim source faithfulness | Precision/recall/F1 `1.00`; source faithfulness `0.90` because one correct obligation used a paraphrased excerpt |
+| Mapper | Ten obligation/candidate sets; classification, completeness, threshold behavior, and Brier score | 10/10 classifications; F1 `1.00`; Brier score `0.0013` |
+| Diff | Three regulation pairs with ten candidate judgments; verdict, pairing, removal, and rationale checks | All measured classification, pairing, removal, and rationale metrics `1.00` |
+| Retrieval | Eight queries over controlled policy chunks using real Cohere embeddings and pgvector | Recall@1 `0.9375`; Recall@3 and MRR `1.00`; tenant isolation `1.00` |
+| Brief | Five mixed, all-mapped, and all-gap scenarios; structure, coverage, actions, grounding, and hallucination guards | A successful baseline passed 5/5 cases with all aggregate metrics `1.00` |
+| End-to-end | One golden path through HTTP upload, indexing, extraction, retrieval, mapping, impact tagging, events, persistence, and brief generation | Core stage metrics `1.00`; about 17 seconds; eight Groq calls and 7,063 tokens |
+
+The end-to-end case is intentionally small enough to run on demand. It
+contains one stricter policy match, one direct match, and one genuine
+gap, so a passing result demonstrates more than a success-only path.
+The harness also records stage latency, Groq token usage, Cohere request
+counts, final persisted states, and workflow-event coverage.
+
+These results are evidence, not a guarantee. The datasets are curated
+and much smaller than a bank's full regulatory corpus. Model wording
+varies between runs, strict grounding checks can reject a reasonable
+paraphrase, and free-tier token limits can produce provider errors
+during repeated runs. For that reason the workflow report must be
+inspected at case level: a green GitHub job means the harness completed,
+not that every quality threshold passed. Production use would require a
+larger independently reviewed dataset, periodic regression baselines,
+provider capacity sized for the workload, and human approval of
+compliance conclusions.
 
 ## Failure modes
 
@@ -274,6 +314,8 @@ but production adoption would justify additional capabilities:
 - AWS-native CI/CD with OIDC federation and auto-rollback.
 - Live SSE workflow events with sequence numbers and reconnection.
 - 13-topic in-app help system with searchable cards.
+- Versioned AI quality evaluation for every core agent, retrieval, and
+  the complete golden path.
 
 ## Where things live
 
@@ -283,5 +325,8 @@ but production adoption would justify additional capabilities:
 - Domain + JPA: `domain/`
 - Auth + tenancy: `auth/`, `tenancy/`
 - CI/CD: `.github/workflows/ci.yml`
+- Manual AI evaluation: `.github/workflows/ai-evaluation.yml`
 - Tests: `src/test/kotlin/io/kalunge/eunomia/`
+- Evaluation code: `src/test/kotlin/io/kalunge/eunomia/evaluation/`
+- Labelled evaluation data: `src/test/resources/ai-eval/`
 - Frontend: `web/src/`
