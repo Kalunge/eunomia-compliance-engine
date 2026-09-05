@@ -1,0 +1,200 @@
+{
+  "schemaVersion": 1,
+  "suiteId": "mapper-v1",
+  "evaluator": "mapper",
+  "description": "Measures policy satisfaction decisions at the production confidence threshold, including calibration and judgment completeness.",
+  "cases": [
+    {
+      "id": "exact-retention-match",
+      "input": {
+        "obligation": {
+          "summary": "Banks must retain customer records for seven years.",
+          "sourceExcerpt": "Licensed institutions shall retain customer identification records for a minimum of seven years."
+        },
+        "candidates": [
+          {
+            "text": "Customer identification records shall be retained for a minimum of seven years."
+          }
+        ]
+      },
+      "expected": {
+        "satisfiedIndices": [0]
+      },
+      "tags": ["exact", "retention"]
+    },
+    {
+      "id": "stricter-retention-policy",
+      "input": {
+        "obligation": {
+          "summary": "Banks must retain transaction records for at least five years.",
+          "sourceExcerpt": "Transaction records shall be retained for a minimum period of five years."
+        },
+        "candidates": [
+          {
+            "text": "The bank retains all transaction records for seven years from the transaction date."
+          }
+        ]
+      },
+      "expected": {
+        "satisfiedIndices": [0]
+      },
+      "tags": ["stricter", "retention"]
+    },
+    {
+      "id": "weaker-retention-policy",
+      "input": {
+        "obligation": {
+          "summary": "Banks must retain transaction records for seven years.",
+          "sourceExcerpt": "Transaction records shall be retained for a minimum period of seven years."
+        },
+        "candidates": [
+          {
+            "text": "The bank retains transaction records for five years from the transaction date."
+          }
+        ]
+      },
+      "expected": {
+        "satisfiedIndices": []
+      },
+      "tags": ["weaker", "retention"]
+    },
+    {
+      "id": "unrelated-policy",
+      "input": {
+        "obligation": {
+          "summary": "Banks must report suspicious transactions within 24 hours.",
+          "sourceExcerpt": "Suspicious transactions shall be reported to the Financial Reporting Centre within twenty-four hours."
+        },
+        "candidates": [
+          {
+            "text": "Customer data stored by the bank shall be encrypted using AES-256."
+          }
+        ]
+      },
+      "expected": {
+        "satisfiedIndices": []
+      },
+      "tags": ["unrelated", "negative"]
+    },
+    {
+      "id": "correct-clause-among-distractors",
+      "input": {
+        "obligation": {
+          "summary": "Treasury must calculate the liquidity coverage ratio daily.",
+          "sourceExcerpt": "The Treasury function shall calculate the liquidity coverage ratio before the start of each business day."
+        },
+        "candidates": [
+          {
+            "text": "The liquidity dashboard is presented to the Board Risk Committee every month."
+          },
+          {
+            "text": "Treasury Middle Office calculates the liquidity coverage ratio before each business day begins."
+          },
+          {
+            "text": "This policy describes the bank's general approach to liquidity risk."
+          }
+        ]
+      },
+      "expected": {
+        "satisfiedIndices": [1]
+      },
+      "tags": ["distractors", "frequency"]
+    },
+    {
+      "id": "topic-mention-without-control",
+      "input": {
+        "obligation": {
+          "summary": "Agents must complete annual AML refresher training.",
+          "sourceExcerpt": "Every agent shall complete anti-money-laundering refresher training at least once every twelve months."
+        },
+        "candidates": [
+          {
+            "text": "This manual discusses anti-money-laundering risks relevant to the agent network."
+          }
+        ]
+      },
+      "expected": {
+        "satisfiedIndices": []
+      },
+      "tags": ["topic-only", "negative"]
+    },
+    {
+      "id": "weaker-monitoring-frequency",
+      "input": {
+        "obligation": {
+          "summary": "Banks must monitor agent transactions daily.",
+          "sourceExcerpt": "Licensed institutions shall monitor agent transaction activity on a daily basis."
+        },
+        "candidates": [
+          {
+            "text": "The Channels Risk team reviews aggregate agent transaction activity monthly."
+          }
+        ]
+      },
+      "expected": {
+        "satisfiedIndices": []
+      },
+      "tags": ["weaker", "frequency"]
+    },
+    {
+      "id": "stricter-reporting-deadline",
+      "input": {
+        "obligation": {
+          "summary": "Banks must report cyber incidents within 24 hours.",
+          "sourceExcerpt": "A material cyber incident shall be reported to the regulator within twenty-four hours of detection."
+        },
+        "candidates": [
+          {
+            "text": "The Chief Information Security Officer reports every material cyber incident to the regulator within twelve hours of detection."
+          }
+        ]
+      },
+      "expected": {
+        "satisfiedIndices": [0]
+      },
+      "tags": ["stricter", "deadline"]
+    },
+    {
+      "id": "alternative-prohibition-phrasing",
+      "input": {
+        "obligation": {
+          "summary": "Institutions must not activate agents before due diligence is complete.",
+          "sourceExcerpt": "A licensed institution must not activate an agent before completing the required due diligence."
+        },
+        "candidates": [
+          {
+            "text": "Agent activation is prohibited until Compliance has documented completion of all onboarding due-diligence checks."
+          }
+        ]
+      },
+      "expected": {
+        "satisfiedIndices": [0]
+      },
+      "tags": ["paraphrase", "prohibition"]
+    },
+    {
+      "id": "multiple-satisfying-controls",
+      "input": {
+        "obligation": {
+          "summary": "Banks must screen agents against sanctions lists monthly.",
+          "sourceExcerpt": "Existing agents shall be screened against applicable sanctions lists at least monthly."
+        },
+        "candidates": [
+          {
+            "text": "Compliance screens every active agent against UN, OFAC, and EU sanctions lists each week."
+          },
+          {
+            "text": "All active agents are screened against the approved sanctions lists once every calendar month."
+          },
+          {
+            "text": "The agent population is screened against sanctions lists once per quarter."
+          }
+        ]
+      },
+      "expected": {
+        "satisfiedIndices": [0, 1]
+      },
+      "tags": ["multiple-matches", "sanctions"]
+    }
+  ]
+}
