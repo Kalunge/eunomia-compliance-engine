@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "suiteId": "extractor-v1",
+  "evaluator": "extractor",
+  "description": "Measures obligation extraction precision, recall, F1, parse success, and source-excerpt faithfulness.",
+  "cases": [
+    {
+      "id": "agent-kyc-core-controls",
+      "input": {
+        "documentResource": "ai-eval/documents/agent-kyc-core-controls.md"
+      },
+      "expected": {
+        "obligations": [
+          {
+            "summary": "Banks must perform enhanced identification for agent transactions above KES 70,000.",
+            "sourceExcerpt": "Banks shall perform enhanced customer identification for every agent transaction exceeding KES 70,000."
+          },
+          {
+            "summary": "Institutions must report suspicious agent transactions within 24 hours.",
+            "sourceExcerpt": "Licensed institutions shall report suspicious agent transactions to the Financial Reporting Centre within twenty-four hours."
+          },
+          {
+            "summary": "Institutions must retain agent transaction records for seven years.",
+            "sourceExcerpt": "Institutions shall retain agent transaction records for seven years from the date of the transaction."
+          }
+        ]
+      },
+      "tags": [
+        "kyc",
+        "threshold",
+        "reporting"
+      ]
+    },
+    {
+      "id": "liquidity-monitoring",
+      "input": {
+        "documentResource": "ai-eval/documents/liquidity-monitoring.md"
+      },
+      "expected": {
+        "obligations": [
+          {
+            "summary": "D-SIBs must maintain an LCR of at least 110 percent.",
+            "sourceExcerpt": "Domestic systemically important banks shall maintain a Liquidity Coverage Ratio of at least 110 percent at all times."
+          },
+          {
+            "summary": "Treasury must calculate the LCR daily.",
+            "sourceExcerpt": "The Treasury function shall calculate the ratio before the start of each business day."
+          },
+          {
+            "summary": "Banks must report an LCR breach within 24 hours.",
+            "sourceExcerpt": "Any breach shall be reported to the Central Bank within twenty-four hours of identification."
+          }
+        ]
+      },
+      "tags": [
+        "liquidity",
+        "frequency"
+      ]
+    },
+    {
+      "id": "non-binding-background",
+      "input": {
+        "documentResource": "ai-eval/documents/non-binding-background.md"
+      },
+      "expected": {
+        "obligations": []
+      },
+      "tags": [
+        "negative",
+        "background"
+      ]
+    },
+    {
+      "id": "compound-controls",
+      "input": {
+        "documentResource": "ai-eval/documents/compound-controls.md"
+      },
+      "expected": {
+        "obligations": [
+          {
+            "summary": "Payment service providers must encrypt customer data at rest.",
+            "sourceExcerpt": "Payment service providers shall encrypt customer data at rest and shall retain access logs for a minimum of twelve months."
+          },
+          {
+            "summary": "Payment service providers must retain access logs for at least twelve months.",
+            "sourceExcerpt": "Payment service providers shall encrypt customer data at rest and shall retain access logs for a minimum of twelve months."
+          }
+        ]
+      },
+      "tags": [
+        "atomicity",
+        "compound"
+      ]
+    },
+    {
+      "id": "prohibition-and-deadline",
+      "input": {
+        "documentResource": "ai-eval/documents/prohibition-and-deadline.md"
+      },
+      "expected": {
+        "obligations": [
+          {
+            "summary": "Institutions must not activate an agent before due diligence is complete.",
+            "sourceExcerpt": "A licensed institution must not activate an agent before completing and documenting the required due diligence."
+          },
+          {
+            "summary": "The compliance officer must submit the activation report within five business days.",
+            "sourceExcerpt": "The compliance officer shall submit the agent activation report to the regulator within five business days after approval."
+          }
+        ]
+      },
+      "tags": [
+        "prohibition",
+        "deadline"
+      ]
+    }
+  ]
+}
