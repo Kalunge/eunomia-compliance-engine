@@ -1,0 +1,225 @@
+{
+  "schemaVersion": 1,
+  "suiteId": "diff-v1",
+  "evaluator": "diff",
+  "description": "Measures obligation-change classification, baseline pairing, changed-value rationales, and removed-obligation detection.",
+  "cases": [
+    {
+      "id": "agent-kyc-amendment",
+      "input": {
+        "baselines": [
+          {
+            "id": "kyc-identity",
+            "summary": "Agents must inspect valid identity documents and capture a biometric fingerprint.",
+            "sourceExcerpt": "Every agent shall inspect a valid identity document and capture a biometric fingerprint before completing enhanced verification."
+          },
+          {
+            "id": "kyc-reporting",
+            "summary": "Institutions must report suspicious agent transactions within 48 hours.",
+            "sourceExcerpt": "Suspicious agent transactions shall be reported to the Financial Reporting Centre within forty-eight hours."
+          },
+          {
+            "id": "kyc-retention",
+            "summary": "Institutions must retain agent transaction records for five years.",
+            "sourceExcerpt": "Agent transaction records shall be retained for a minimum of five years."
+          },
+          {
+            "id": "kyc-due-diligence",
+            "summary": "Institutions must complete agent due diligence before onboarding.",
+            "sourceExcerpt": "A licensed institution shall complete and document due diligence before onboarding an agent."
+          },
+          {
+            "id": "kyc-complaints",
+            "summary": "Institutions must submit a monthly return for unresolved agent complaints.",
+            "sourceExcerpt": "A monthly return shall list agent complaints unresolved for more than five business days."
+          }
+        ],
+        "candidates": [
+          {
+            "id": "candidate-identity",
+            "summary": "Agents must verify identity documents and biometric fingerprints during enhanced verification.",
+            "sourceExcerpt": "Enhanced verification requires the agent to inspect a valid identity document and capture a biometric fingerprint.",
+            "baselineIndices": [0, 3, 1]
+          },
+          {
+            "id": "candidate-reporting",
+            "summary": "Institutions must report suspicious agent transactions within 24 hours.",
+            "sourceExcerpt": "Suspicious agent transactions shall be reported to the Financial Reporting Centre within twenty-four hours.",
+            "baselineIndices": [1, 4, 3]
+          },
+          {
+            "id": "candidate-retention",
+            "summary": "Institutions must retain agent transaction records for seven years.",
+            "sourceExcerpt": "Agent transaction records shall be retained for a minimum of seven years.",
+            "baselineIndices": [2, 4, 0]
+          },
+          {
+            "id": "candidate-due-diligence",
+            "summary": "Agent onboarding requires completed and documented due diligence.",
+            "sourceExcerpt": "No agent may be onboarded until the licensed institution has completed and documented its due diligence.",
+            "baselineIndices": [3, 0, 4]
+          },
+          {
+            "id": "candidate-tier-limits",
+            "summary": "Institutions must enforce daily transaction limits for each agent tier.",
+            "sourceExcerpt": "Each licensed institution shall enforce the daily and single-transaction limits assigned to every agent tier.",
+            "baselineIndices": [3, 4, 0]
+          }
+        ]
+      },
+      "expected": {
+        "judgments": [
+          {
+            "candidateId": "candidate-identity",
+            "verdict": "UNCHANGED",
+            "baselineIndex": 0
+          },
+          {
+            "candidateId": "candidate-reporting",
+            "verdict": "MODIFIED",
+            "baselineIndex": 1,
+            "rationaleTermGroups": [
+              ["48", "forty-eight"],
+              ["24", "twenty-four"]
+            ]
+          },
+          {
+            "candidateId": "candidate-retention",
+            "verdict": "MODIFIED",
+            "baselineIndex": 2,
+            "rationaleTermGroups": [
+              ["5", "five"],
+              ["7", "seven"]
+            ]
+          },
+          {
+            "candidateId": "candidate-due-diligence",
+            "verdict": "UNCHANGED",
+            "baselineIndex": 3
+          },
+          {
+            "candidateId": "candidate-tier-limits",
+            "verdict": "ADDED",
+            "baselineIndex": null
+          }
+        ],
+        "removedBaselineIndices": [4]
+      },
+      "tags": ["amendment", "thresholds", "removed"]
+    },
+    {
+      "id": "reordered-paraphrases",
+      "input": {
+        "baselines": [
+          {
+            "id": "security-encryption",
+            "summary": "Payment providers must encrypt customer data at rest.",
+            "sourceExcerpt": "Payment providers shall encrypt all customer data stored at rest."
+          },
+          {
+            "id": "security-logs",
+            "summary": "Payment providers must retain access logs for twelve months.",
+            "sourceExcerpt": "Access logs shall be retained for a minimum of twelve months."
+          },
+          {
+            "id": "security-incidents",
+            "summary": "Payment providers must notify the regulator of incidents within four hours.",
+            "sourceExcerpt": "A material security incident shall be reported to the regulator within four hours."
+          }
+        ],
+        "candidates": [
+          {
+            "id": "candidate-incidents",
+            "summary": "Material security incidents require regulator notification no later than four hours after detection.",
+            "sourceExcerpt": "Providers shall notify the regulator of a material security incident within four hours of detection.",
+            "baselineIndices": [2, 0, 1]
+          },
+          {
+            "id": "candidate-encryption",
+            "summary": "Payment providers must encrypt all stored customer information.",
+            "sourceExcerpt": "Payment providers shall protect all customer information held at rest through encryption.",
+            "baselineIndices": [0, 1, 2]
+          },
+          {
+            "id": "candidate-logs",
+            "summary": "Access logs must be kept for at least twelve months.",
+            "sourceExcerpt": "Providers shall preserve access logs for no less than twelve months.",
+            "baselineIndices": [1, 2, 0]
+          }
+        ]
+      },
+      "expected": {
+        "judgments": [
+          {
+            "candidateId": "candidate-incidents",
+            "verdict": "UNCHANGED",
+            "baselineIndex": 2
+          },
+          {
+            "candidateId": "candidate-encryption",
+            "verdict": "UNCHANGED",
+            "baselineIndex": 0
+          },
+          {
+            "candidateId": "candidate-logs",
+            "verdict": "UNCHANGED",
+            "baselineIndex": 1
+          }
+        ],
+        "removedBaselineIndices": []
+      },
+      "tags": ["reordered", "paraphrase"]
+    },
+    {
+      "id": "vendor-risk-material-change",
+      "input": {
+        "baselines": [
+          {
+            "id": "vendor-audit",
+            "summary": "Vendor contracts must permit bank audits on 30 days notice.",
+            "sourceExcerpt": "The bank shall have a contractual audit right exercisable on thirty days notice."
+          },
+          {
+            "id": "vendor-testing",
+            "summary": "Critical vendors must participate in annual resilience tests.",
+            "sourceExcerpt": "Every critical provider shall participate in an operational resilience test once each year."
+          }
+        ],
+        "candidates": [
+          {
+            "id": "candidate-audit",
+            "summary": "Vendor contracts must permit bank audits on 14 days notice.",
+            "sourceExcerpt": "The institution shall have a contractual audit right exercisable on fourteen days notice.",
+            "baselineIndices": [0, 1]
+          },
+          {
+            "id": "candidate-concentration",
+            "summary": "No critical vendor may exceed 25 percent of total critical-service spend.",
+            "sourceExcerpt": "A single provider shall not account for more than twenty-five percent of critical-service expenditure.",
+            "baselineIndices": [1, 0]
+          }
+        ]
+      },
+      "expected": {
+        "judgments": [
+          {
+            "candidateId": "candidate-audit",
+            "verdict": "MODIFIED",
+            "baselineIndex": 0,
+            "rationaleTermGroups": [
+              ["30", "thirty"],
+              ["14", "fourteen"]
+            ]
+          },
+          {
+            "candidateId": "candidate-concentration",
+            "verdict": "ADDED",
+            "baselineIndex": null
+          }
+        ],
+        "removedBaselineIndices": [1]
+      },
+      "tags": ["material-change", "added", "removed"]
+    }
+  ]
+}
