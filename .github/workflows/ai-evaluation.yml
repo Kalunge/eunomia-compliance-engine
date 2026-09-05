@@ -28,6 +28,7 @@ jobs:
     timeout-minutes: 20
     env:
       GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
       GROQ_MODEL: ${{ inputs.model }}
       AI_EVAL_CALL_DELAY_MS: ${{ inputs.call_delay_ms }}
 
@@ -49,10 +50,14 @@ jobs:
           key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: gradle-${{ runner.os }}-
 
-      - name: Validate evaluation secret
+      - name: Validate evaluation secrets
         run: |
           if [ -z "$GROQ_API_KEY" ]; then
             echo "::error::Repository secret GROQ_API_KEY is required."
+            exit 1
+          fi
+          if [ -z "$COHERE_API_KEY" ]; then
+            echo "::error::Repository secret COHERE_API_KEY is required."
             exit 1
           fi
 

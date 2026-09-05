@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "chunks": [
+    {
+      "id": "agent-identity",
+      "text": "Agents shall inspect a valid identity document, capture a biometric fingerprint, and complete one-time-password verification for transactions above KES 70,000."
+    },
+    {
+      "id": "agent-suspicious-reporting",
+      "text": "The Money Laundering Reporting Officer shall file suspicious agent transaction reports with the Financial Reporting Centre within twenty-four hours."
+    },
+    {
+      "id": "agent-record-retention",
+      "text": "Customer identification and agent transaction records shall be retained for seven years from the most recent transaction."
+    },
+    {
+      "id": "agent-training",
+      "text": "Every active agent shall complete KYC and anti-money-laundering refresher training at least once every twelve months."
+    },
+    {
+      "id": "agent-tier-limits",
+      "text": "The Channels function shall enforce daily and single-transaction limits assigned to each agent tier."
+    },
+    {
+      "id": "vendor-due-diligence",
+      "text": "Procurement shall complete financial, ownership, sanctions, and information-security due diligence before engaging a critical service provider."
+    },
+    {
+      "id": "vendor-audit-rights",
+      "text": "Contracts with critical providers shall grant audit rights to the bank and the Central Bank of Kenya."
+    },
+    {
+      "id": "cyber-incident-reporting",
+      "text": "Material cyber incidents affecting a critical service shall be reported to the regulator within four hours of detection."
+    },
+    {
+      "id": "liquidity-lcr",
+      "text": "Treasury shall maintain a Liquidity Coverage Ratio of at least 110 percent at all times."
+    },
+    {
+      "id": "liquidity-stress-testing",
+      "text": "Treasury Risk shall perform liquidity stress testing every quarter and report results to the Board Risk Committee."
+    },
+    {
+      "id": "customer-complaints",
+      "text": "Customer complaints unresolved after five business days shall be included in the monthly complaints return."
+    },
+    {
+      "id": "marketing-governance",
+      "text": "Marketing campaigns require approval from Brand, Legal, and the relevant product owner before publication."
+    },
+    {
+      "id": "other-tenant-agent-identity",
+      "tenant": "other",
+      "text": "Enhanced customer verification for agent transactions above KES 70,000 requires identity documents, biometrics, and a one-time password."
+    }
+  ]
+}

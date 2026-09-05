@@ -134,18 +134,18 @@ URLs once running:
 **Run the AI evaluation suites** separately from deterministic tests:
 
 ```bash
-GROQ_API_KEY=your-key ./gradlew aiEval
+GROQ_API_KEY=your-key COHERE_API_KEY=your-key ./gradlew aiEval
 ```
 
 The command writes Markdown and JSON scorecards under
-`build/reports/ai-eval/`. Without `GROQ_API_KEY`, the live model suites
-are skipped and only the no-cost evaluation-foundation checks run.
+`build/reports/ai-eval/`. Live suites skip when their required provider
+key is absent; the no-cost evaluation-foundation checks still run.
 
 For a cloud run, open **Actions → AI Evaluation → Run workflow**. The
-workflow requires the repository secret `GROQ_API_KEY`, publishes the
-Markdown scorecards in the run summary, and retains the complete
-reports as an artifact for 30 days. It is manual and does not deploy
-the application.
+workflow requires repository secrets `GROQ_API_KEY` and `COHERE_API_KEY`,
+publishes the Markdown scorecards in the run summary, and retains the
+complete reports as an artifact for 30 days. It is manual and does not
+deploy the application.
 
 ## Configuration
 
