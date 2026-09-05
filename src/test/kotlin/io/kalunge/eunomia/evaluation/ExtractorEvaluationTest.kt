@@ -1,13 +1,11 @@
 package io.kalunge.eunomia.evaluation
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import dev.langchain4j.model.openai.OpenAiChatModel
 import io.kalunge.eunomia.extraction.LangChain4jExtractorAgent
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import java.nio.file.Path
-import java.time.Duration
 import kotlin.system.measureTimeMillis
 
 @Tag("ai-eval")
@@ -17,28 +15,17 @@ class ExtractorEvaluationTest {
 
     @Test
     fun `evaluates extractor against labelled regulations`() {
-        val apiKey = System.getenv("GROQ_API_KEY").orEmpty()
+        val evaluationModel = GroqEvaluationModelFactory.createFromEnvironment()
         assumeTrue(
-            apiKey.isNotBlank(),
+            evaluationModel != null,
             "Set GROQ_API_KEY to run the live Extractor evaluation.",
         )
+        val model = requireNotNull(evaluationModel)
 
-        val modelName = System.getenv("GROQ_MODEL")
-            ?.takeIf { it.isNotBlank() }
-            ?: "openai/gpt-oss-120b"
-        val chatModel = OpenAiChatModel.builder()
-            .baseUrl(
-                System.getenv("GROQ_BASE_URL")
-                    ?.takeIf { it.isNotBlank() }
-                    ?: "https://api.groq.com/openai/v1",
-            )
-            .apiKey(apiKey)
-            .modelName(modelName)
-            .temperature(0.1)
-            .timeout(Duration.ofSeconds(60))
-            .maxRetries(5)
-            .build()
-        val agent = LangChain4jExtractorAgent(chatModel, objectMapper)
+        val agent = LangChain4jExtractorAgent(
+            model.chatModel,
+            objectMapper,
+        )
         val dataset = EvaluationDatasetLoader(objectMapper)
             .load("ai-eval/extractor-v1.json")
 
@@ -101,7 +88,7 @@ class ExtractorEvaluationTest {
 
         val report = EvaluationReportFactory.create(
             dataset = dataset,
-            model = modelName,
+            model = model.modelName,
             results = results,
         )
         val reportRoot = Path.of(
