@@ -1,0 +1,254 @@
+{
+  "schemaVersion": 1,
+  "suiteId": "brief-v1",
+  "evaluator": "brief",
+  "description": "Measures whether executive impact briefs remain complete, actionable, and grounded in structured compliance evidence.",
+  "cases": [
+    {
+      "id": "mixed-agent-banking-coverage",
+      "input": {
+        "regulationTitle": "CBK Agent Banking Controls 2026",
+        "sourceFilename": "cbk-agent-banking-controls-2026.md",
+        "uploadedAt": "2026-09-05T08:00:00Z",
+        "obligations": [
+          {
+            "id": "enhanced-identity",
+            "summary": "Apply enhanced identity checks to agent transactions above KES 70,000.",
+            "sourceExcerpt": "Agents shall inspect identity documents, capture a biometric, and verify a one-time password above KES 70,000.",
+            "gapStatus": "GAP",
+            "impactedProducts": ["Agent Banking", "Mobile Banking"],
+            "anchorTerms": ["identity", "70,000"]
+          },
+          {
+            "id": "suspicious-reporting",
+            "summary": "Report suspicious agent transactions to the FRC within 24 hours.",
+            "sourceExcerpt": "The MLRO shall file suspicious agent transaction reports with the Financial Reporting Centre within twenty-four hours.",
+            "gapStatus": "MAPPED",
+            "impactedProducts": ["Agent Banking"],
+            "matches": [
+              {
+                "policyTitle": "AML Operations Manual",
+                "chunkText": "The MLRO reports suspicious channel activity to the FRC within 24 hours.",
+                "confidence": 0.94
+              }
+            ],
+            "anchorTerms": ["suspicious", "24 hours"]
+          },
+          {
+            "id": "record-retention",
+            "summary": "Retain agent identification and transaction records for seven years.",
+            "sourceExcerpt": "Agent identification and transaction records shall be retained for seven years.",
+            "gapStatus": "GAP",
+            "impactedProducts": ["Agent Banking"],
+            "anchorTerms": ["records", "seven years"]
+          }
+        ]
+      },
+      "expected": {
+        "forbiddenTerms": ["KES 5 million", "licence revocation", "30 days"]
+      },
+      "tags": ["mixed", "agent-banking"]
+    },
+    {
+      "id": "all-liquidity-controls-mapped",
+      "input": {
+        "regulationTitle": "Prudential Liquidity Standard 2026",
+        "sourceFilename": "prudential-liquidity-standard-2026.pdf",
+        "uploadedAt": "2026-08-20T10:30:00Z",
+        "obligations": [
+          {
+            "id": "lcr-threshold",
+            "summary": "Maintain a Liquidity Coverage Ratio of at least 110 percent.",
+            "sourceExcerpt": "Institutions shall maintain an LCR not lower than 110 percent.",
+            "gapStatus": "MAPPED",
+            "impactedProducts": ["Treasury"],
+            "matches": [
+              {
+                "policyTitle": "Treasury Liquidity Policy",
+                "chunkText": "Treasury maintains the LCR at or above 110 percent.",
+                "confidence": 0.98
+              }
+            ],
+            "anchorTerms": ["liquidity coverage ratio", "110"]
+          },
+          {
+            "id": "quarterly-stress-testing",
+            "summary": "Perform liquidity stress testing every quarter.",
+            "sourceExcerpt": "Liquidity stress tests shall be completed quarterly.",
+            "gapStatus": "MAPPED",
+            "impactedProducts": ["Treasury"],
+            "matches": [
+              {
+                "policyTitle": "Treasury Liquidity Policy",
+                "chunkText": "Treasury Risk runs liquidity stress scenarios every quarter.",
+                "confidence": 0.96
+              }
+            ],
+            "anchorTerms": ["stress", "quarter"]
+          },
+          {
+            "id": "board-reporting",
+            "summary": "Report quarterly liquidity stress results to the Board Risk Committee.",
+            "sourceExcerpt": "Results shall be submitted to the Board Risk Committee each quarter.",
+            "gapStatus": "MAPPED",
+            "impactedProducts": ["Treasury"],
+            "matches": [
+              {
+                "policyTitle": "Board Risk Reporting Standard",
+                "chunkText": "Quarterly liquidity stress results are tabled at the Board Risk Committee.",
+                "confidence": 0.93
+              }
+            ],
+            "anchorTerms": ["board risk committee", "results"]
+          }
+        ]
+      },
+      "expected": {
+        "forbiddenTerms": ["capital injection", "daily reporting", "penalty"]
+      },
+      "tags": ["all-mapped", "liquidity"]
+    },
+    {
+      "id": "all-outsourcing-controls-gaps",
+      "input": {
+        "regulationTitle": "Critical Outsourcing Direction 2026",
+        "sourceFilename": "critical-outsourcing-direction.md",
+        "uploadedAt": "2026-07-15T06:00:00Z",
+        "obligations": [
+          {
+            "id": "vendor-due-diligence",
+            "summary": "Complete ownership, sanctions, financial, and security due diligence before appointing a critical provider.",
+            "sourceExcerpt": "A regulated institution shall perform due diligence before engaging a critical service provider.",
+            "gapStatus": "GAP",
+            "impactedProducts": ["Procurement", "Third-Party Risk"],
+            "anchorTerms": ["due diligence", "critical provider"]
+          },
+          {
+            "id": "audit-rights",
+            "summary": "Include bank and regulator audit rights in critical provider contracts.",
+            "sourceExcerpt": "Critical outsourcing agreements shall grant audit rights to the institution and regulator.",
+            "gapStatus": "GAP",
+            "impactedProducts": ["Procurement", "Legal"],
+            "anchorTerms": ["audit rights", "contracts"]
+          },
+          {
+            "id": "exit-plan",
+            "summary": "Maintain a tested exit plan for every critical outsourced service.",
+            "sourceExcerpt": "Institutions shall document and test an exit strategy for each critical service.",
+            "gapStatus": "GAP",
+            "impactedProducts": ["Third-Party Risk", "Business Continuity"],
+            "anchorTerms": ["exit plan", "critical"]
+          }
+        ]
+      },
+      "expected": {
+        "forbiddenTerms": ["criminal liability", "KES 10 million", "seven-day deadline"]
+      },
+      "tags": ["all-gaps", "outsourcing"]
+    },
+    {
+      "id": "overlapping-digital-products",
+      "input": {
+        "regulationTitle": "Digital Credit Consumer Protection Rules",
+        "sourceFilename": "digital-credit-consumer-protection-rules.txt",
+        "uploadedAt": "2026-06-01T12:00:00Z",
+        "obligations": [
+          {
+            "id": "pricing-disclosure",
+            "summary": "Disclose the total cost of credit before a customer accepts a digital loan.",
+            "sourceExcerpt": "The total cost of credit shall be displayed before acceptance.",
+            "gapStatus": "MAPPED",
+            "impactedProducts": ["Digital Credit", "Mobile App"],
+            "matches": [
+              {
+                "policyTitle": "Digital Lending Disclosure Standard",
+                "chunkText": "The application displays total credit cost before loan acceptance.",
+                "confidence": 0.95
+              }
+            ],
+            "anchorTerms": ["total cost", "accepts"]
+          },
+          {
+            "id": "consent-record",
+            "summary": "Capture and retain explicit customer consent for every digital credit agreement.",
+            "sourceExcerpt": "Providers shall retain evidence of explicit consent for each agreement.",
+            "gapStatus": "GAP",
+            "impactedProducts": ["Digital Credit", "Mobile App", "API Banking"],
+            "anchorTerms": ["consent", "agreement"]
+          },
+          {
+            "id": "complaint-channel",
+            "summary": "Provide an in-application channel for digital credit complaints.",
+            "sourceExcerpt": "A complaint channel shall be accessible within the digital lending interface.",
+            "gapStatus": "MAPPED",
+            "impactedProducts": ["Digital Credit", "Mobile App"],
+            "matches": [
+              {
+                "policyTitle": "Customer Complaints Procedure",
+                "chunkText": "Digital lending customers can lodge complaints from the mobile application.",
+                "confidence": 0.89
+              }
+            ],
+            "anchorTerms": ["complaint", "channel"]
+          }
+        ]
+      },
+      "expected": {
+        "forbiddenTerms": ["interest rate cap", "credit bureau", "14 days"]
+      },
+      "tags": ["products", "mixed"]
+    },
+    {
+      "id": "cyber-reporting-and-resilience",
+      "input": {
+        "regulationTitle": "Operational Resilience Circular 2026",
+        "sourceFilename": "operational-resilience-circular-2026.pdf",
+        "uploadedAt": "2026-05-10T09:15:00Z",
+        "obligations": [
+          {
+            "id": "incident-reporting",
+            "summary": "Report material cyber incidents to the regulator within four hours.",
+            "sourceExcerpt": "Material cyber incidents shall be reported within four hours of detection.",
+            "gapStatus": "MAPPED",
+            "impactedProducts": ["Cyber Security", "Digital Channels"],
+            "matches": [
+              {
+                "policyTitle": "Cyber Incident Response Plan",
+                "chunkText": "Compliance notifies the regulator of material cyber incidents within four hours.",
+                "confidence": 0.97
+              }
+            ],
+            "anchorTerms": ["cyber incidents", "four hours"]
+          },
+          {
+            "id": "recovery-exercise",
+            "summary": "Test recovery of critical digital services twice each year.",
+            "sourceExcerpt": "Recovery arrangements for critical digital services shall be tested semi-annually.",
+            "gapStatus": "GAP",
+            "impactedProducts": ["Business Continuity", "Digital Channels"],
+            "anchorTerms": ["recovery", "twice"]
+          },
+          {
+            "id": "board-oversight",
+            "summary": "Require the board to review operational resilience metrics every quarter.",
+            "sourceExcerpt": "The board shall review resilience metrics on a quarterly basis.",
+            "gapStatus": "MAPPED",
+            "impactedProducts": ["Business Continuity"],
+            "matches": [
+              {
+                "policyTitle": "Operational Resilience Framework",
+                "chunkText": "The Board Risk Committee reviews resilience metrics each quarter.",
+                "confidence": 0.92
+              }
+            ],
+            "anchorTerms": ["board", "quarter"]
+          }
+        ]
+      },
+      "expected": {
+        "forbiddenTerms": ["72 hours", "monthly exercise", "automatic suspension"]
+      },
+      "tags": ["cyber", "mixed"]
+    }
+  ]
+}
