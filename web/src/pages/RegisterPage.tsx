@@ -106,13 +106,16 @@ export default function RegisterPage() {
               value={password}
               onChange={setPassword}
               autoComplete="new-password"
-              placeholder="At least 12 characters"
+              placeholder="Enter any password"
               required
             />
 
             {mutation.isError && (
               <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-                {apiErrorMessage(mutation.error, 'Could not create your account. Try a different email.')}
+                {apiErrorMessage(
+                  mutation.error,
+                  'Could not create your account. Check the bank slug and email, then try again.',
+                )}
               </div>
             )}
 

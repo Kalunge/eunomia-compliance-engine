@@ -76,6 +76,28 @@ class AuthApiTest {
     }
 
     @Test
+    fun `register accepts a short non-empty password`() {
+        val email = "short-password-${unique()}@example.com"
+
+        mockMvc.perform(
+            post("/api/v1/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "email": "$email",
+                      "password": "1",
+                      "displayName": "Demo User",
+                      "tenantSlug": "demo-bank"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isCreated)
+            .andExpect(jsonPath("$.user.email").value(email))
+    }
+
+    @Test
     fun `login fails with the wrong password`() {
         val email = "bob-${unique()}@example.com"
         register(email, "right-password-very-long", "demo-bank")

@@ -48,7 +48,13 @@ export function isApiError(error: unknown): error is AxiosError<{ code: string; 
 
 export function apiErrorMessage(error: unknown, fallback = 'Something went wrong.'): string {
   if (isApiError(error)) {
-    return error.response?.data?.message ?? error.message ?? fallback
+    const message = error.response?.data?.message
+    if (typeof message === 'string' && message.trim()) {
+      return message
+    }
+    if (!error.response) {
+      return 'Unable to reach Eunomia. Check your connection and try again.'
+    }
   }
   return fallback
 }

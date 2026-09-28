@@ -33,7 +33,6 @@ data class RegisterRequest(
     val email: String,
 
     @field:NotBlank
-    @field:Size(min = 12, max = 128, message = "Password must be 12-128 characters")
     val password: String,
 
     @field:NotBlank
